@@ -1,0 +1,14 @@
+.user-form {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--background-color-secondary);
+}
+
+.user-form__card {
+  background-color: var(--background-color-primary);
+  padding: 32px;
+  width: 500px;
+  border-radius: 4px;
+}
