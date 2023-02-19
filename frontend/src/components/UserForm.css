@@ -11,4 +11,101 @@
   padding: 32px;
   width: 500px;
   border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 
+TODO: The following are not used by UserForm but by React components that are
+passed to UserForm for reusability. I have not been able to found a more sound
+pattern for reusable styling rules, but if a better alternative is found we 
+*/
+.user-form__logo {
+  margin-top: 0px;
+  font-variant: small-caps;
+  font-weight: 500;
+  color: var(--header-color-primary);
+  font-family: var(--font-headline);
+}
+
+.user-form__main-header {
+  margin: 0px;
+  font-family: var(--font-headline);
+  color: var(--header-color-primary);
+  font-weight: bold;
+  text-align: center;
+}
+
+.user-form__subheader {
+  margin: 8px 0px 0px 0px;
+  color: var(--text-color);
+  text-align: center;
+}
+
+.user-form__form {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.user-form__input-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  margin-bottom: 32px;
+}
+
+.user-form__label {
+  font-family: var(--font-headline);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.user-form__required-text {
+  font-size: 10px;
+  vertical-align: text-top;
+  color: var(--status-danger);
+  margin-left: 2px;
+}
+
+.user-form__text-box {
+  background-color: var(--background-color-primary-alt);
+  color: var(--text-color);
+  padding: 12px 8px;
+  border-style: none;
+  outline-style: none;
+}
+
+.user-form__button {
+  background-color: var(--background-color-secondary);
+  font-size: 16px;
+  padding: 14px 20px;
+  border-radius: 4px;
+  border-style: none;
+  cursor: pointer;
+}
+
+.user-form__button:hover {
+  opacity: 0.9;
+}
+
+.user-form__alternative-link-text {
+  margin-top: 12px;
+  align-self: flex-start;
+  color: var(--text-color);
+}
+
+.user-form__alternative-link {
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--background-color-secondary);
+}
+
+.user-form__alternative-link:hover {
+  text-decoration: underline;
 }
