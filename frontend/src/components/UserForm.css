@@ -17,9 +17,8 @@
 }
 
 /* 
-TODO: The following are not used by UserForm but by React components that are
-passed to UserForm for reusability. I have not been able to found a more sound
-pattern for reusable styling rules, but if a better alternative is found we 
+The following are not used by UserForm but by React components that are
+passed to UserForm for reusability.
 */
 .user-form__logo {
   margin-top: 0px;

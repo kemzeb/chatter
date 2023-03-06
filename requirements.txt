@@ -2,3 +2,4 @@ black
 channels
 Django
 pytest
+python-dotenv
