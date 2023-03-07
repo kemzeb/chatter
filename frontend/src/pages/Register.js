@@ -24,7 +24,7 @@ function Register() {
           <label className="user-form__label" htmlFor="username">
             Username<span className="user-form__required-text">*</span>
           </label>
-          <input className="user-form__text-box" type="text" id="pwd" name="username" />
+          <input className="user-form__text-box" type="text" id="username" name="username" />
         </div>
         <div className="user-form__input-text">
           <label className="user-form__label" htmlFor="pwd">
