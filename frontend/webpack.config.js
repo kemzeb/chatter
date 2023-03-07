@@ -32,5 +32,7 @@ module.exports = {
         NODE_ENV: JSON.stringify('development')
       }
     })
-  ]
+  ],
+  // Enable source maps. See https://webpack.js.org/configuration/devtool/#devtool
+  devtool: 'eval-source-map'
 };
