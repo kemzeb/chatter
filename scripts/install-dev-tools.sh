@@ -1,5 +1,5 @@
 # Install Python-related dependencies.
-pip install --user -r requirements.txt
+pip install -e .[rest]
 
 # Install npm-related dependencies.
 cd frontend/
