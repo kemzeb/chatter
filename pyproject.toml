@@ -9,6 +9,7 @@ requires-python = ">=3.9"
 license = { text = "MIT" }
 classifiers = ["Framework :: Django", "Programming Language :: Python :: 3"]
 dependencies = [
+    "daphne>=4.0.0",
     "Django>=4.2",
     "djangorestframework>=3.14",
     "djangorestframework-simplejwt>=5.2",

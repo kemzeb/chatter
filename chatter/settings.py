@@ -43,9 +43,14 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
+# Have Daphne point to the root routing configuration
+# https://channels.readthedocs.io/en/stable/tutorial/part_1.html#integrate-the-channels-library
+ASGI_APPLICATION = "chatter.asgi.application"
+
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
