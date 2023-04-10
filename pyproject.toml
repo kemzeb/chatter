@@ -22,6 +22,7 @@ dynamic = ["version"]
 rest = [
     "black>=23.3.0",
     "flake8>=6.0",
+    "isort>=5.12",
     "pytest>=7.3.0",
     "pytest-asyncio>=0.21.0",
     "pytest-django>=4.5.2",
@@ -33,3 +34,8 @@ find = {}
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "chatter.settings"
 python_files = ["test_*.py", "test.py"]
+
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#profile
+[tool.isort]
+profile = "black"
+skip_glob = ["*/migrations/*"]
