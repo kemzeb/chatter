@@ -27,9 +27,11 @@
     "vscode": {
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
-        "ms-python.python", // Python
-        "dbaeumer.vscode-eslint", // ESLint
-        "esbenp.prettier-vscode" // Prettier formatter
+        "ms-python.python",
+        "ms-python.isort",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "tamasfe.even-better-toml" // Synatx highlighting for pyproject.toml.
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -42,6 +44,13 @@
           // See https://stackoverflow.com/questions/50177173/how-do-i-get-flake8-to-reliably-ignore-rules-in-vs-code
           "--max-line-length=88"
         ],
+        "[python]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+          }
+        },
+        "isort.args": ["--profile", "black"],
 
         "eslint.validate": ["javascript", "javascriptreact"],
         "[javascript]": {
