@@ -2,6 +2,7 @@
 max-line-length = 88
 extend-ignore = E203
 exclude =
-    migrations
     __pycache__
     manage.py
+    migrations
+    settings.py
