@@ -30,11 +30,7 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# FIXME: See https://github.com/django/channels/issues/1115 for why
-# all hosts are allowed. See if you can follow up on the idea
-# mentioned in the issue where we could use hostname headers that
-# we would allow.
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

@@ -6,7 +6,7 @@ User = get_user_model()
 
 
 @pytest.fixture
-def user_created_return_jwt_access_token() -> str:
+def jwt_access_token_of_auth_user() -> str:
     user = User.objects.create(
         username="qwarkinator", email="qwark@example.com", password="fight_crime!12"
     )
@@ -14,3 +14,8 @@ def user_created_return_jwt_access_token() -> str:
     refresh = RefreshToken.for_user(user)
 
     return str(refresh.access_token)
+
+
+@pytest.fixture
+def origin_header() -> tuple[bytes, bytes]:
+    return (b"origin", b"http://localhost")
