@@ -4,5 +4,5 @@ extend-ignore = E203
 exclude =
     __pycache__
     manage.py
-    migrations
+    */migrations/*
     settings.py
