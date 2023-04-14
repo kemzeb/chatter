@@ -19,8 +19,6 @@ def user_1():
     user1 = User.objects.create(
         username="qwarkinator", email="qwark@example.com", password="fight_crime!12"
     )
-    user1.save()
-
     return user1
 
 
