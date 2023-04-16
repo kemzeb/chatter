@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
 
 from chat.models import ChatGroup
@@ -33,8 +34,11 @@ async def test_chat_consumer_with_event_group_create(communicator_user_1):
 
     response = await communicator_user_1.receive_from()
     response = json.loads(response)
-    msg = response["message"]
+
     assert response["event_type"] == "group:created"
+
+    assert "message" in response
+    msg = response["message"]
     assert "chat_group_id" in msg
     assert type(msg["chat_group_id"]) == int
     assert "name" in msg
@@ -46,3 +50,34 @@ async def test_chat_consumer_with_event_group_create(communicator_user_1):
 
     membership_row_count = await new_chat_group.members.acount()
     assert membership_row_count == 1, "Owner should be a member of their chat group."
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_chat_consumer_with_event_group_list(communicator_user_1, user_1):
+    name1 = "Precursors rule"
+    name2 = "The Glory Of Panau"
+
+    group_1 = await ChatGroup.objects.acreate(owner=user_1, name=name1)
+    group_2 = await ChatGroup.objects.acreate(owner=user_1, name=name2)
+    await database_sync_to_async(group_1.members.add)(user_1)
+    await database_sync_to_async(group_2.members.add)(user_1)
+
+    await communicator_user_1.send_json_to({"event_type": "group:list"})
+
+    response = await communicator_user_1.receive_from()
+    response = json.loads(response)
+
+    assert response["event_type"] == "group:listed"
+
+    assert "message" in response
+    chat_groups = response["message"]
+    assert type(chat_groups) == list
+    assert len(chat_groups) == 2
+
+    for group in chat_groups:
+        assert "owner_id" in group
+        assert group["owner_id"] == user_1.id
+        assert "chat_group_id" in group
+        assert group["chat_group_id"] in (group_1.pk, group_2.pk)
+        assert group["name"] in [name1, name2]

@@ -14,6 +14,7 @@ class ChatConsumer(JsonWebsocketConsumer):
     client, server, and channel layer. The following
     represent the custom event names:
     - group:create      Create a chat group for the given user
+    - group:list        List the user's chat groups they are in
     """
 
     def connect(self):
@@ -27,12 +28,14 @@ class ChatConsumer(JsonWebsocketConsumer):
     def disconnect(self, close_code):
         pass
 
+    # FIXME: Introduce an abstraction to handle these events. As more events are added,
+    # this method will be given more and more reasons to change.
     def receive_json(self, content):
         user = self.scope["user"]
         event_type = content["event_type"]
-        message = content["message"]
 
         if event_type == "group:create":
+            message = content["message"]
             serializer = CreateChatGroupSerializer(data=message)
 
             if not serializer.is_valid():
@@ -53,6 +56,22 @@ class ChatConsumer(JsonWebsocketConsumer):
                         "name": new_chat_group.name,
                     },
                 )
+        elif event_type == "group:list":
+            chat_groups = ChatGroup.objects.filter(members__id=user.id)
+            chat_group_list = []
+
+            for chat_group in chat_groups:
+                chat_group_list.append(
+                    {
+                        "owner_id": chat_group.owner.id,
+                        "chat_group_id": chat_group.pk,
+                        "name": chat_group.name,
+                    }
+                )
+
+            # FIXME: When we introduce channel layers, we need to ponder how the user
+            # gets notified of new messages.
+            self.send_event_to_client("group:listed", chat_group_list)
 
     def send_event_to_client(self, event_type: str, message):
         self.send_json({"event_type": event_type, "message": message})
