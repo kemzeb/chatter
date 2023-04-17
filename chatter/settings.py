@@ -50,6 +50,11 @@ SIMPLE_JWT = {
 # https://channels.readthedocs.io/en/stable/tutorial/part_1.html#integrate-the-channels-library
 ASGI_APPLICATION = "chatter.asgi.application"
 
+# TODO: In-memory layer should not be used in production as explained in the Django Channels
+# documentation. We should eventually turn to a Redis single-server configuration for
+# better performance and no chance of data loss.
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+
 # Application definition
 
 INSTALLED_APPS = [
