@@ -26,12 +26,48 @@ async def test_chat_consumer_with_anonymous_user(origin_header):
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
+async def test_chat_consumer_on_connect(communicator_user_1_no_connect_trigger, user_1):
+    name1 = "Precursors rule"
+    name2 = "The Glory Of Panau"
+
+    group_1 = await ChatGroup.objects.acreate(owner=user_1, name=name1)
+    group_2 = await ChatGroup.objects.acreate(owner=user_1, name=name2)
+    await database_sync_to_async(group_1.members.add)(user_1)
+    await database_sync_to_async(group_2.members.add)(user_1)
+
+    connected, _ = await communicator_user_1_no_connect_trigger.connect()
+    assert connected
+
+    response = await communicator_user_1_no_connect_trigger.receive_from()
+    response = json.loads(response)
+
+    assert response["event_type"] == "group:connected"
+
+    assert "message" in response
+    chat_groups = response["message"]
+    assert type(chat_groups) == list
+    assert len(chat_groups) == 2
+
+    for group in chat_groups:
+        assert "owner_id" in group
+        assert group["owner_id"] == user_1.id
+        assert "chat_group_id" in group
+        assert group["chat_group_id"] in (group_1.pk, group_2.pk)
+        assert group["name"] in [name1, name2]
+
+    await communicator_user_1_no_connect_trigger.disconnect()
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
 async def test_chat_consumer_with_event_group_create(communicator_user_1):
+    # Ignore the group:connected response.
+    await communicator_user_1.receive_from()
+
     name = "Veldin rocks"
     await communicator_user_1.send_json_to(
         {"event_type": "group:create", "message": {"name": name}}
     )
-
     response = await communicator_user_1.receive_from()
     response = json.loads(response)
 
@@ -50,34 +86,3 @@ async def test_chat_consumer_with_event_group_create(communicator_user_1):
 
     membership_row_count = await new_chat_group.members.acount()
     assert membership_row_count == 1, "Owner should be a member of their chat group."
-
-
-@pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
-async def test_chat_consumer_with_event_group_list(communicator_user_1, user_1):
-    name1 = "Precursors rule"
-    name2 = "The Glory Of Panau"
-
-    group_1 = await ChatGroup.objects.acreate(owner=user_1, name=name1)
-    group_2 = await ChatGroup.objects.acreate(owner=user_1, name=name2)
-    await database_sync_to_async(group_1.members.add)(user_1)
-    await database_sync_to_async(group_2.members.add)(user_1)
-
-    await communicator_user_1.send_json_to({"event_type": "group:list"})
-
-    response = await communicator_user_1.receive_from()
-    response = json.loads(response)
-
-    assert response["event_type"] == "group:listed"
-
-    assert "message" in response
-    chat_groups = response["message"]
-    assert type(chat_groups) == list
-    assert len(chat_groups) == 2
-
-    for group in chat_groups:
-        assert "owner_id" in group
-        assert group["owner_id"] == user_1.id
-        assert "chat_group_id" in group
-        assert group["chat_group_id"] in (group_1.pk, group_2.pk)
-        assert group["name"] in [name1, name2]

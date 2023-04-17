@@ -21,7 +21,22 @@ class ChatConsumer(JsonWebsocketConsumer):
         user = self.scope["user"]
 
         if not user.is_anonymous:
+            chat_groups = ChatGroup.objects.filter(members__id=user.id)
+            chat_group_list = []
+
+            for chat_group in chat_groups:
+                chat_group_list.append(
+                    {
+                        "owner_id": chat_group.owner.id,
+                        "chat_group_id": chat_group.pk,
+                        "name": chat_group.name,
+                    }
+                )
+
             self.accept()
+            # FIXME: When we introduce channel layers, we need to ponder how the user
+            # gets notified of new messages.
+            self.send_event_to_client("group:connected", chat_group_list)
         else:
             self.close()
 
@@ -56,22 +71,6 @@ class ChatConsumer(JsonWebsocketConsumer):
                         "name": new_chat_group.name,
                     },
                 )
-        elif event_type == "group:list":
-            chat_groups = ChatGroup.objects.filter(members__id=user.id)
-            chat_group_list = []
-
-            for chat_group in chat_groups:
-                chat_group_list.append(
-                    {
-                        "owner_id": chat_group.owner.id,
-                        "chat_group_id": chat_group.pk,
-                        "name": chat_group.name,
-                    }
-                )
-
-            # FIXME: When we introduce channel layers, we need to ponder how the user
-            # gets notified of new messages.
-            self.send_event_to_client("group:listed", chat_group_list)
 
     def send_event_to_client(self, event_type: str, message):
         self.send_json({"event_type": event_type, "message": message})

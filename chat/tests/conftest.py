@@ -22,8 +22,14 @@ def user_1():
     return user1
 
 
-@pytest_asyncio.fixture
-async def communicator_user_1(origin_header, user_1):
+@pytest.fixture
+def communicator_user_1_no_connect_trigger(
+    origin_header, user_1
+) -> WebsocketCommunicator:
+    """
+    A fixture that exists to test ChatConsumer connections. You will need to call
+    connect() and disconnect() on the WebsocketCommunicator manually.
+    """
     jwt = RefreshToken.for_user(user_1)
     comm = WebsocketCommunicator(
         application,
@@ -31,9 +37,18 @@ async def communicator_user_1(origin_header, user_1):
         headers=[origin_header],
     )
 
-    connected, _ = await comm.connect()
+    return comm
+
+
+@pytest_asyncio.fixture
+async def communicator_user_1(communicator_user_1_no_connect_trigger, user_1):
+    """
+    A fixture that provides a WebsocketCommunicator that handles triggering connection
+    and disconnection.
+    """
+    connected, _ = await communicator_user_1_no_connect_trigger.connect()
     if not connected:
         pytest.fail("WebsocketCommunicator failed to connect.")
 
-    yield comm
-    await comm.disconnect()
+    yield communicator_user_1_no_connect_trigger
+    await communicator_user_1_no_connect_trigger.disconnect()
