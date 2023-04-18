@@ -14,7 +14,6 @@ class ChatConsumer(JsonWebsocketConsumer):
     client, server, and channel layer. The following
     represent the custom event names:
     - group:create      Create a chat group for the given user
-    - group:list        List the user's chat groups they are in
     """
 
     def connect(self):
