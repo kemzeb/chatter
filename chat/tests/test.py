@@ -2,6 +2,7 @@ import json
 
 import pytest
 from channels.db import database_sync_to_async
+from channels.layers import get_channel_layer
 from channels.testing import WebsocketCommunicator
 
 from chat.models import ChatGroup
@@ -26,19 +27,8 @@ async def test_chat_consumer_with_anonymous_user(origin_header):
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_chat_consumer_on_connect(communicator_user_1_no_connect_trigger, user_1):
-    name1 = "Precursors rule"
-    name2 = "The Glory Of Panau"
-
-    group_1 = await ChatGroup.objects.acreate(owner=user_1, name=name1)
-    group_2 = await ChatGroup.objects.acreate(owner=user_1, name=name2)
-    await database_sync_to_async(group_1.members.add)(user_1)
-    await database_sync_to_async(group_2.members.add)(user_1)
-
-    connected, _ = await communicator_user_1_no_connect_trigger.connect()
-    assert connected
-
-    response = await communicator_user_1_no_connect_trigger.receive_from()
+async def test_chat_consumer_on_connect(communicator1, user_1):
+    response = await communicator1.receive_from()
     response = json.loads(response)
 
     assert response["event_type"] == "group:connected"
@@ -52,23 +42,42 @@ async def test_chat_consumer_on_connect(communicator_user_1_no_connect_trigger, 
         assert "owner_id" in group
         assert group["owner_id"] == user_1.id
         assert "chat_group_id" in group
-        assert group["chat_group_id"] in (group_1.pk, group_2.pk)
-        assert group["name"] in [name1, name2]
 
-    await communicator_user_1_no_connect_trigger.disconnect()
+        manager = await database_sync_to_async(ChatGroup.objects.filter)(
+            id=group["chat_group_id"]
+        )
+        group_model = await manager.afirst()
+        assert group_model
+        assert group["name"] == group_model.name
+
+    channel_layer = get_channel_layer()
+
+    a_chat_group_id = chat_groups[0]["chat_group_id"]
+    await channel_layer.group_send(
+        f"chat_{a_chat_group_id}",
+        {
+            "type": "handle_chat_message",
+            "event_type": "group:message",
+            "message": "Hello world!",
+        },
+    )
+
+    group_msg = await communicator1.receive_from()
+    group_msg = json.loads(group_msg)
+    assert "event_type" in group_msg
 
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_chat_consumer_with_event_group_create(communicator_user_1):
+async def test_chat_consumer_with_event_group_create(communicator1):
     # Ignore the group:connected response.
-    await communicator_user_1.receive_from()
+    await communicator1.receive_from()
 
     name = "Veldin rocks"
-    await communicator_user_1.send_json_to(
+    await communicator1.send_json_to(
         {"event_type": "group:create", "message": {"name": name}}
     )
-    response = await communicator_user_1.receive_from()
+    response = await communicator1.receive_from()
     response = json.loads(response)
 
     assert response["event_type"] == "group:created"

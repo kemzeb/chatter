@@ -4,6 +4,7 @@ from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from chat.models import ChatGroup
 from chatter.asgi import application
 
 User = get_user_model()
@@ -16,19 +17,28 @@ def origin_header() -> tuple[bytes, bytes]:
 
 @pytest.fixture
 def user_1():
+    """
+    Creates a user and also creates 2 of their own chat groups. They have the following
+    names:
+    - "Precursors rule"
+    - "The Glory Of Panau"
+    """
     user1 = User.objects.create(
         username="qwarkinator", email="qwark@example.com", password="fight_crime!12"
     )
+    group_1 = ChatGroup.objects.create(owner=user1, name="Precursors rule")
+    group_2 = ChatGroup.objects.create(owner=user1, name="The Glory Of Panau")
+    group_1.members.add(user1)
+    group_2.members.add(user1)
+
     return user1
 
 
 @pytest.fixture
-def communicator_user_1_no_connect_trigger(
-    origin_header, user_1
-) -> WebsocketCommunicator:
+def communicator1_without_handling(origin_header, user_1) -> WebsocketCommunicator:
     """
-    A fixture that exists to test ChatConsumer connections. You will need to call
-    connect() and disconnect() on the WebsocketCommunicator manually.
+    Creates a `WebsocketCommunicator` using the `user_1` fixture. You will need to call
+    `connect()` and `disconnect()` on the `WebsocketCommunicator` manually.
     """
     jwt = RefreshToken.for_user(user_1)
     comm = WebsocketCommunicator(
@@ -41,14 +51,14 @@ def communicator_user_1_no_connect_trigger(
 
 
 @pytest_asyncio.fixture
-async def communicator_user_1(communicator_user_1_no_connect_trigger, user_1):
+async def communicator1(communicator1_without_handling):
     """
-    A fixture that provides a WebsocketCommunicator that handles triggering connection
-    and disconnection.
+    Provides a `WebsocketCommunicator` that handles triggering connection and
+    disconnection. This uses the user_1 fixture, hence the "1" in the fixture name.
     """
-    connected, _ = await communicator_user_1_no_connect_trigger.connect()
+    connected, _ = await communicator1_without_handling.connect()
     if not connected:
         pytest.fail("WebsocketCommunicator failed to connect.")
 
-    yield communicator_user_1_no_connect_trigger
-    await communicator_user_1_no_connect_trigger.disconnect()
+    yield communicator1_without_handling
+    await communicator1_without_handling.disconnect()

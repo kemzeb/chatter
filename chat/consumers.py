@@ -1,3 +1,4 @@
+from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
 
 from chat.models import ChatGroup
@@ -23,6 +24,8 @@ class ChatConsumer(JsonWebsocketConsumer):
             chat_groups = ChatGroup.objects.filter(members__id=user.id)
             chat_group_list = []
 
+            self.accept()
+
             for chat_group in chat_groups:
                 chat_group_list.append(
                     {
@@ -31,18 +34,24 @@ class ChatConsumer(JsonWebsocketConsumer):
                         "name": chat_group.name,
                     }
                 )
+                async_to_sync(self.channel_layer.group_add)(
+                    f"chat_{chat_group.pk}", self.channel_name
+                )
 
-            self.accept()
-            # FIXME: When we introduce channel layers, we need to ponder how the user
-            # gets notified of new messages.
             self.send_event_to_client("group:connected", chat_group_list)
         else:
             self.close()
 
     def disconnect(self, close_code):
-        pass
+        user = self.scope["user"]
+        chat_groups = ChatGroup.objects.filter(members__id=user.id)
 
-    # FIXME: Introduce an abstraction to handle these events. As more events are added,
+        for chat_group in chat_groups:
+            async_to_sync(self.channel_layer.group_discard)(
+                f"chat_{chat_group.pk}", self.channel_name
+            )
+
+    # TODO: Introduce an abstraction to handle these events. As more events are added,
     # this method will be given more and more reasons to change.
     def receive_json(self, content):
         user = self.scope["user"]
@@ -70,6 +79,10 @@ class ChatConsumer(JsonWebsocketConsumer):
                         "name": new_chat_group.name,
                     },
                 )
+
+    # FIXME: The following code is just temporary to test named group communication.
+    def handle_chat_message(self, event):
+        self.send_event_to_client(event["event_type"], event["message"])
 
     def send_event_to_client(self, event_type: str, message):
         self.send_json({"event_type": event_type, "message": message})
