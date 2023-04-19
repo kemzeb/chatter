@@ -1,8 +1,8 @@
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
 
-from chat.models import ChatGroup
-from chat.serializers import CreateChatGroupSerializer
+from chat.models import ChatGroup, ChatMessage
+from chat.serializers import CreateChatGroupSerializer, FetchChatGroupSerializer
 
 
 class ChatConsumer(JsonWebsocketConsumer):
@@ -56,29 +56,68 @@ class ChatConsumer(JsonWebsocketConsumer):
     def receive_json(self, content):
         user = self.scope["user"]
         event_type = content["event_type"]
+        message = content["message"]
 
         if event_type == "group:create":
-            message = content["message"]
             serializer = CreateChatGroupSerializer(data=message)
 
             if not serializer.is_valid():
                 self.send_err_event_to_client("serialization")
-            else:
-                data = serializer.data
+                return
 
-                # Create a new chat group for this user.
-                new_chat_group = ChatGroup.objects.create(owner=user, name=data["name"])
-                # Add user as a member of their chat group.
-                new_chat_group.members.add(user)
-                new_chat_group.save()
+            data = serializer.data
 
-                self.send_event_to_client(
-                    "group:created",
-                    {
-                        "chat_group_id": new_chat_group.pk,
-                        "name": new_chat_group.name,
-                    },
-                )
+            # Create a new chat group for this user.
+            new_chat_group = ChatGroup.objects.create(owner=user, name=data["name"])
+            # Add user as a member of their chat group.
+            new_chat_group.members.add(user)
+            new_chat_group.save()
+
+            self.send_event_to_client(
+                "group:created",
+                {
+                    "chat_group_id": new_chat_group.pk,
+                    "name": new_chat_group.name,
+                },
+            )
+        elif event_type == "group:fetch":
+            # Make sure they are a member of that chat group before fetching
+            # Use chat group id from client to fetch all messages and members
+            serializer = FetchChatGroupSerializer(data=message)
+
+            if not serializer.is_valid():
+                self.send_err_event_to_client("serialization")
+                return
+
+            data = serializer.data
+
+            # Make sure they are a member of the chat group.
+            chat_group_manager = ChatGroup.objects.filter(id=data["chat_group_id"])
+
+            if not chat_group_manager.exists():
+                self.send_err_event_to_client("forbidden")
+                return
+
+            chat_group = chat_group_manager[0]
+            members = [
+                {"id": member.id, "username": member.username}
+                for member in chat_group.members.all().only("id", "username")
+            ]
+            messages = [
+                {
+                    "user_id": message.from_user.id,
+                    "id": message.pk,
+                    "message": message.message,
+                    "date_sent": message.date_sent.ctime(),
+                }
+                for message in ChatMessage.objects.filter(
+                    from_chat_group=chat_group
+                ).only("from_user", "id", "message", "date_sent")
+            ]
+
+            self.send_event_to_client(
+                "group:fetched", {"members": members, "messages": messages}
+            )
 
     # FIXME: The following code is just temporary to test named group communication.
     def handle_chat_message(self, event):
@@ -88,4 +127,4 @@ class ChatConsumer(JsonWebsocketConsumer):
         self.send_json({"event_type": event_type, "message": message})
 
     def send_err_event_to_client(self, err_type: str):
-        self.send_json({"event_type": "error", "error_type": err_type})
+        self.send_event_to_client("error", err_type)

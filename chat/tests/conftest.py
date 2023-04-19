@@ -4,7 +4,7 @@ from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from chat.models import ChatGroup
+from chat.models import ChatGroup, ChatMessage
 from chatter.asgi import application
 
 User = get_user_model()
@@ -22,6 +22,8 @@ def user_1():
     names:
     - "Precursors rule"
     - "The Glory Of Panau"
+
+    It also adds 2 messages to the first chat group that the user made.
     """
     user1 = User.objects.create(
         username="qwarkinator", email="qwark@example.com", password="fight_crime!12"
@@ -30,6 +32,15 @@ def user_1():
     group_2 = ChatGroup.objects.create(owner=user1, name="The Glory Of Panau")
     group_1.members.add(user1)
     group_2.members.add(user1)
+
+    ChatMessage.objects.create(
+        from_user=user1, from_chat_group=group_1, message="Qwarktastic!"
+    )
+    ChatMessage.objects.create(
+        from_user=user1,
+        from_chat_group=group_1,
+        message="That poor plumber and his social economic disparity.",
+    )
 
     return user1
 
@@ -54,11 +65,16 @@ def communicator1_without_handling(origin_header, user_1) -> WebsocketCommunicat
 async def communicator1(communicator1_without_handling):
     """
     Provides a `WebsocketCommunicator` that handles triggering connection and
-    disconnection. This uses the user_1 fixture, hence the "1" in the fixture name.
+    disconnection. This uses the `user_1` fixture, hence the "1" in the fixture name.
+
+    It also ignores the `group:connected` event sent after connection is established.
     """
     connected, _ = await communicator1_without_handling.connect()
     if not connected:
         pytest.fail("WebsocketCommunicator failed to connect.")
+
+    # Ignore "group:connected" event.
+    await communicator1_without_handling.receive_from()
 
     yield communicator1_without_handling
     await communicator1_without_handling.disconnect()
