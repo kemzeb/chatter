@@ -1,6 +1,5 @@
 """
-Code reference: https://github.com/joshua-hashimoto/django-channels-jwt-auth-middleware\
-    /blob/main/django_channels_jwt_auth_middleware/auth.py
+Reference: https://github.com/joshua-hashimoto/django-channels-jwt-auth-middleware/blob/main/django_channels_jwt_auth_middleware/auth.py # noqa: E501
 """
 import traceback
 from urllib.parse import parse_qs
