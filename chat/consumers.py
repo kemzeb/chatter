@@ -59,6 +59,11 @@ class ChatConsumer(JsonWebsocketConsumer):
     # this method will be given more and more reasons to change.
     def receive_json(self, content):
         user = self.scope["user"]
+
+        if "event_type" not in content or "message" not in content:
+            self.send_err_event_to_client("bad message")
+            return
+
         event_type = content["event_type"]
         message = content["message"]
 
@@ -73,6 +78,7 @@ class ChatConsumer(JsonWebsocketConsumer):
 
             # Create a new chat group for this user.
             new_chat_group = ChatGroup.objects.create(owner=user, name=data["name"])
+
             # Add user as a member of their chat group.
             new_chat_group.members.add(user)
             new_chat_group.save()
@@ -167,7 +173,6 @@ class ChatConsumer(JsonWebsocketConsumer):
                 },
             )
 
-    # FIXME: The following code is just temporary to test named group communication.
     def handle_chat_message(self, event):
         self.send_event_to_client("group:messaged", event)
 
