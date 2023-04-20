@@ -2,7 +2,11 @@ from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
 
 from chat.models import ChatGroup, ChatMessage
-from chat.serializers import CreateChatGroupSerializer, FetchChatGroupSerializer
+from chat.serializers import (
+    CreateChatGroupSerializer,
+    FetchChatGroupSerializer,
+    MessageChatGroupSerializer,
+)
 
 
 class ChatConsumer(JsonWebsocketConsumer):
@@ -81,8 +85,6 @@ class ChatConsumer(JsonWebsocketConsumer):
                 },
             )
         elif event_type == "group:fetch":
-            # Make sure they are a member of that chat group before fetching
-            # Use chat group id from client to fetch all messages and members
             serializer = FetchChatGroupSerializer(data=message)
 
             if not serializer.is_valid():
@@ -118,10 +120,48 @@ class ChatConsumer(JsonWebsocketConsumer):
             self.send_event_to_client(
                 "group:fetched", {"members": members, "messages": messages}
             )
+        elif event_type == "group:message":
+            serializer = MessageChatGroupSerializer(data=message)
+
+            if not serializer.is_valid():
+                self.send_err_event_to_client("serialization")
+                return
+
+            data = serializer.data
+
+            # Make sure the group exists.
+            chat_group_manager = ChatGroup.objects.filter(id=data["from_chat_group"])
+
+            if not chat_group_manager.exists():
+                self.send_err_event_to_client("forbidden")
+                return
+
+            chat_group = chat_group_manager[0]
+
+            # Make sure the user is a member of the group.
+            members_manager = chat_group.members.filter(id=user.id)
+
+            if not members_manager.exists():
+                self.send_err_event_to_client("forbidden")
+                return
+
+            new_message = ChatMessage.objects.create(
+                from_user=user, from_chat_group=chat_group, message=data["message"]
+            )
+
+            async_to_sync(self.channel_layer.group_send)(
+                f"chat_{chat_group.pk}",
+                {
+                    "type": "handle_chat_message",
+                    "from_user": user.id,
+                    "from_chat_group": chat_group.pk,
+                    "message": new_message.message,
+                },
+            )
 
     # FIXME: The following code is just temporary to test named group communication.
     def handle_chat_message(self, event):
-        self.send_event_to_client(event["event_type"], event["message"])
+        self.send_event_to_client("group:messaged", event)
 
     def send_event_to_client(self, event_type: str, message):
         self.send_json({"event_type": event_type, "message": message})

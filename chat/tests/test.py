@@ -20,7 +20,7 @@ async def test_chat_consumer_with_anonymous_user(origin_header):
     )
 
     connected, _ = await communicator.connect()
-    assert connected is False, "Should not allow unauthenticated users"
+    assert connected is False, "Should not allow unauthenticated users."
 
     await communicator.disconnect()
 
@@ -43,8 +43,7 @@ async def test_chat_consumer_on_connect(communicator1_without_handling, user_1):
     assert len(chat_groups) == 2
 
     for group in chat_groups:
-        assert "owner_id" in group
-        assert group["owner_id"] == user_1.id
+        assert "owner_id" in group and group["owner_id"] == user_1.id
         assert "chat_group_id" in group
 
         manager = await database_sync_to_async(ChatGroup.objects.filter)(
@@ -61,14 +60,13 @@ async def test_chat_consumer_on_connect(communicator1_without_handling, user_1):
         f"chat_{a_chat_group_id}",
         {
             "type": "handle_chat_message",
-            "event_type": "group:message",
             "message": "Hello world!",
         },
     )
 
     group_msg = await communicator1_without_handling.receive_from()
     group_msg = json.loads(group_msg)
-    assert "event_type" in group_msg
+    assert "message" in group_msg
 
     await communicator1_without_handling.disconnect()
 
@@ -83,20 +81,18 @@ async def test_chat_consumer_with_event_group_create(communicator1):
     response = await communicator1.receive_from()
     response = json.loads(response)
 
-    assert "event_type" in response
-    assert response["event_type"] == "group:created"
+    assert "event_type" in response and response["event_type"] == "group:created"
 
     assert "message" in response
     msg = response["message"]
-    assert "chat_group_id" in msg
-    assert type(msg["chat_group_id"]) == int
-    assert "name" in msg
-    assert msg["name"] == name
+    assert "chat_group_id" in msg and type(msg["chat_group_id"]) == int
+    assert "name" in msg and msg["name"] == name
 
     id = msg["chat_group_id"]
-    new_chat_group = await ChatGroup.objects.aget(id=id)
-    assert new_chat_group is not None
+    chat_group_manager = await database_sync_to_async(ChatGroup.objects.filter)(id=id)
+    assert await chat_group_manager.aexists()
 
+    new_chat_group = await chat_group_manager.afirst()
     membership_row_count = await new_chat_group.members.acount()
     assert membership_row_count == 1, "Owner should be a member of their chat group."
 
@@ -125,8 +121,7 @@ async def test_chat_consumer_with_event_group_fetch(communicator1, user_1):
         )
         member_model = await manager.afirst()
         assert member_model
-        assert "username" in member
-        assert member["username"] == member_model.username
+        assert "username" in member and member["username"] == member_model.username
 
     assert "messages" in msg
     assert type(msg["messages"]) == list
@@ -137,9 +132,36 @@ async def test_chat_consumer_with_event_group_fetch(communicator1, user_1):
         )
         message_model = await manager.afirst()
         assert message_model
-        assert "user_id" in message
-        assert message["user_id"] == user_1.id
-        assert "message" in message
-        assert message["message"] == message_model.message
+        assert "user_id" in message and message["user_id"] == user_1.id
+        assert "message" in message and message["message"] == message_model.message
         assert "date_sent" in message
         assert message["date_sent"] == message_model.date_sent.ctime()
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_chat_consumer_with_event_group_message(communicator1, user_1):
+    chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+    my_message = "Need to drown my sorrows in dark eco."
+    await communicator1.send_json_to(
+        {
+            "event_type": "group:message",
+            "message": {
+                "from_chat_group": chat_group.pk,
+                "message": my_message,
+            },
+        }
+    )
+
+    response = await communicator1.receive_from()
+    response = json.loads(response)
+
+    assert "event_type" in response
+    assert response["event_type"] == "group:messaged"
+
+    assert "message" in response
+    msg = response["message"]
+    assert type(msg) == dict
+    assert msg["from_user"] == user_1.id
+    assert msg["from_chat_group"] == chat_group.pk
+    assert msg["message"] == my_message
