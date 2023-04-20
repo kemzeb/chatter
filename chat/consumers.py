@@ -19,6 +19,8 @@ class ChatConsumer(JsonWebsocketConsumer):
     client, server, and channel layer. The following
     represent the custom event names:
     - group:create      Create a chat group for the given user
+    - group:fetch       Fetches members and messages of a chat group
+    - group:message     Receive client messages and send to named group
     """
 
     def connect(self):
@@ -55,123 +57,133 @@ class ChatConsumer(JsonWebsocketConsumer):
                 f"chat_{chat_group.pk}", self.channel_name
             )
 
-    # TODO: Introduce an abstraction to handle these events. As more events are added,
-    # this method will be given more and more reasons to change.
-    def receive_json(self, content):
-        user = self.scope["user"]
+    event_type = {
+        "group:create": "create_group_event",
+        "group:fetch": "fetch_group_event",
+        "group:message": "message_group_event",
+    }
 
-        if "event_type" not in content or "message" not in content:
+    def receive_json(self, content):
+        if (
+            ("event_type" not in content)
+            or ("message" not in content)
+            or (content["event_type"] not in self.event_type)
+        ):
             self.send_err_event_to_client("bad message")
             return
 
-        event_type = content["event_type"]
-        message = content["message"]
+        getattr(self, self.event_type[content["event_type"]])(content["message"])
 
-        if event_type == "group:create":
-            serializer = CreateChatGroupSerializer(data=message)
+    def create_group_event(self, message):
+        user = self.scope["user"]
+        serializer = CreateChatGroupSerializer(data=message)
 
-            if not serializer.is_valid():
-                self.send_err_event_to_client("serialization")
-                return
+        if not serializer.is_valid():
+            self.send_err_event_to_client("serialization")
+            return
 
-            data = serializer.data
+        data = serializer.data
 
-            # Create a new chat group for this user.
-            new_chat_group = ChatGroup.objects.create(owner=user, name=data["name"])
+        # Create a new chat group for this user.
+        new_chat_group = ChatGroup.objects.create(owner=user, name=data["name"])
 
-            # Add user as a member of their chat group.
-            new_chat_group.members.add(user)
-            new_chat_group.save()
+        # Add user as a member of their chat group.
+        new_chat_group.members.add(user)
+        new_chat_group.save()
 
-            self.send_event_to_client(
-                "group:created",
-                {
-                    "chat_group_id": new_chat_group.pk,
-                    "name": new_chat_group.name,
-                },
+        self.send_event_to_client(
+            "group:created",
+            {
+                "chat_group_id": new_chat_group.pk,
+                "name": new_chat_group.name,
+            },
+        )
+
+    def fetch_group_event(self, message):
+        user = self.scope["user"]
+        serializer = FetchChatGroupSerializer(data=message)
+
+        if not serializer.is_valid():
+            self.send_err_event_to_client("serialization")
+            return
+
+        data = serializer.data
+
+        # Make sure the group exists.
+        chat_group_manager = ChatGroup.objects.filter(id=data["chat_group_id"])
+
+        if not chat_group_manager.exists():
+            self.send_err_event_to_client("forbidden")
+            return
+
+        chat_group = chat_group_manager[0]
+
+        # Make sure the user is a member of the group.
+        members_manager = chat_group.members.filter(id=user.id)
+
+        if not members_manager.exists():
+            self.send_err_event_to_client("forbidden")
+            return
+
+        members = [
+            {"id": member.id, "username": member.username}
+            for member in chat_group.members.all().only("id", "username")
+        ]
+        messages = [
+            {
+                "user_id": message.from_user.id,
+                "id": message.pk,
+                "message": message.message,
+                "date_sent": message.date_sent.ctime(),
+            }
+            for message in ChatMessage.objects.filter(from_chat_group=chat_group).only(
+                "from_user", "id", "message", "date_sent"
             )
-        elif event_type == "group:fetch":
-            serializer = FetchChatGroupSerializer(data=message)
+        ]
 
-            if not serializer.is_valid():
-                self.send_err_event_to_client("serialization")
-                return
+        self.send_event_to_client(
+            "group:fetched", {"members": members, "messages": messages}
+        )
 
-            data = serializer.data
+    def message_group_event(self, message):
+        user = self.scope["user"]
+        serializer = MessageChatGroupSerializer(data=message)
 
-            # Make sure the group exists.
-            chat_group_manager = ChatGroup.objects.filter(id=data["chat_group_id"])
+        if not serializer.is_valid():
+            self.send_err_event_to_client("serialization")
+            return
 
-            if not chat_group_manager.exists():
-                self.send_err_event_to_client("forbidden")
-                return
+        data = serializer.data
 
-            chat_group = chat_group_manager[0]
+        # Make sure the group exists.
+        chat_group_manager = ChatGroup.objects.filter(id=data["from_chat_group"])
 
-            # Make sure the user is a member of the group.
-            members_manager = chat_group.members.filter(id=user.id)
+        if not chat_group_manager.exists():
+            self.send_err_event_to_client("forbidden")
+            return
 
-            if not members_manager.exists():
-                self.send_err_event_to_client("forbidden")
-                return
+        chat_group = chat_group_manager[0]
 
-            members = [
-                {"id": member.id, "username": member.username}
-                for member in chat_group.members.all().only("id", "username")
-            ]
-            messages = [
-                {
-                    "user_id": message.from_user.id,
-                    "id": message.pk,
-                    "message": message.message,
-                    "date_sent": message.date_sent.ctime(),
-                }
-                for message in ChatMessage.objects.filter(
-                    from_chat_group=chat_group
-                ).only("from_user", "id", "message", "date_sent")
-            ]
+        # Make sure the user is a member of the group.
+        members_manager = chat_group.members.filter(id=user.id)
 
-            self.send_event_to_client(
-                "group:fetched", {"members": members, "messages": messages}
-            )
-        elif event_type == "group:message":
-            serializer = MessageChatGroupSerializer(data=message)
+        if not members_manager.exists():
+            self.send_err_event_to_client("forbidden")
+            return
 
-            if not serializer.is_valid():
-                self.send_err_event_to_client("serialization")
-                return
+        new_message = ChatMessage.objects.create(
+            from_user=user, from_chat_group=chat_group, message=data["message"]
+        )
 
-            data = serializer.data
-
-            # Make sure the group exists.
-            chat_group_manager = ChatGroup.objects.filter(id=data["from_chat_group"])
-
-            if not chat_group_manager.exists():
-                self.send_err_event_to_client("forbidden")
-                return
-
-            chat_group = chat_group_manager[0]
-
-            # Make sure the user is a member of the group.
-            members_manager = chat_group.members.filter(id=user.id)
-
-            if not members_manager.exists():
-                self.send_err_event_to_client("forbidden")
-                return
-
-            new_message = ChatMessage.objects.create(
-                from_user=user, from_chat_group=chat_group, message=data["message"]
-            )
-
-            async_to_sync(self.channel_layer.group_send)(
-                f"chat_{chat_group.pk}",
-                {
-                    "type": "handle_chat_message",
-                    "from_user": user.id,
-                    "from_chat_group": chat_group.pk,
-                    "message": new_message.message,
-                },
-            )
+        async_to_sync(self.channel_layer.group_send)(
+            f"chat_{chat_group.pk}",
+            {
+                "type": "handle_chat_message",
+                "from_user": user.id,
+                "from_chat_group": chat_group.pk,
+                "message": new_message.message,
+            },
+        )
 
     def handle_chat_message(self, event):
         self.send_event_to_client("group:messaged", event)
