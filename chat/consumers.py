@@ -93,7 +93,7 @@ class ChatConsumer(JsonWebsocketConsumer):
 
             data = serializer.data
 
-            # Make sure they are a member of the chat group.
+            # Make sure the group exists.
             chat_group_manager = ChatGroup.objects.filter(id=data["chat_group_id"])
 
             if not chat_group_manager.exists():
@@ -101,6 +101,14 @@ class ChatConsumer(JsonWebsocketConsumer):
                 return
 
             chat_group = chat_group_manager[0]
+
+            # Make sure the user is a member of the group.
+            members_manager = chat_group.members.filter(id=user.id)
+
+            if not members_manager.exists():
+                self.send_err_event_to_client("forbidden")
+                return
+
             members = [
                 {"id": member.id, "username": member.username}
                 for member in chat_group.members.all().only("id", "username")
