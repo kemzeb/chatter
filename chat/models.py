@@ -6,7 +6,9 @@ from chatter import settings
 class ChatGroup(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     members = models.ManyToManyField(
-        settings.AUTH_USER_MODEL, through="ChatGroupMembership", related_name="members"
+        settings.AUTH_USER_MODEL,
+        through="ChatGroupMembership",
+        related_name="chat_groups",
     )
     name = models.CharField(max_length=64)
     date_created = models.DateField(auto_now_add=True)
