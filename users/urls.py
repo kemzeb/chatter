@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .views import RegisterView
+from .views import FriendsListView, RegisterView
 
 urlpatterns = [
     path(
@@ -17,5 +17,6 @@ urlpatterns = [
                 path("register/", RegisterView.as_view(), name="register"),
             ]
         ),
-    )
+    ),
+    path("<int:pk>/friends/", FriendsListView.as_view()),
 ]
