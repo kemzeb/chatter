@@ -129,6 +129,10 @@ class ChatConsumer(JsonWebsocketConsumer):
             {"id": member.id, "username": member.username}
             for member in chat_group.members.all().only("id", "username")
         ]
+
+        # FIXME: Fetching all the messages of a chat group is not ideal. We should only
+        # fetch a fixed amount and expose another WebSocket event that fetches more
+        # messages depending on a timestamp given.
         messages = [
             {
                 "user_id": message.from_user.id,
@@ -136,9 +140,9 @@ class ChatConsumer(JsonWebsocketConsumer):
                 "message": message.message,
                 "sent_on": str(message.sent_on),
             }
-            for message in ChatMessage.objects.filter(from_chat_group=chat_group).only(
-                "from_user", "id", "message", "sent_on"
-            )
+            for message in ChatMessage.objects.filter(from_chat_group=chat_group)
+            .only("from_user", "id", "message", "sent_on")
+            .order_by("-sent_on")
         ]
 
         self.send_event_to_client(
