@@ -33,7 +33,7 @@ class TestChatConsumer:
         response = json.loads(response)
 
         assert "event_type" in response
-        assert response["event_type"] == "group:connected"
+        assert response["event_type"] == "group:connect"
 
         assert "message" in response
         chat_groups = response["message"]
@@ -76,7 +76,7 @@ class TestChatConsumer:
         response = await communicator1.receive_from()
         response = json.loads(response)
 
-        assert "event_type" in response and response["event_type"] == "group:created"
+        assert "event_type" in response and response["event_type"] == "group:create"
 
         assert "message" in response
         msg = response["message"]
@@ -104,7 +104,7 @@ class TestChatConsumer:
         response = await communicator1.receive_from()
         response = json.loads(response)
 
-        assert response["event_type"] == "group:fetched"
+        assert response["event_type"] == "group:fetch"
 
         msg = response["message"]
 
@@ -150,7 +150,7 @@ class TestChatConsumer:
         response = json.loads(response)
 
         assert "event_type" in response
-        assert response["event_type"] == "group:messaged"
+        assert response["event_type"] == "group:message"
 
         assert "message" in response
         msg = response["message"]
@@ -158,3 +158,4 @@ class TestChatConsumer:
         assert msg["from_user"] == user_1.id
         assert msg["from_chat_group"] == chat_group.pk
         assert msg["message"] == my_message
+        assert "date_sent" in msg

@@ -44,7 +44,7 @@ class ChatConsumer(JsonWebsocketConsumer):
                     f"chat_{chat_group.pk}", self.channel_name
                 )
 
-            self.send_event_to_client("group:connected", chat_group_list)
+            self.send_event_to_client("group:connect", chat_group_list)
         else:
             self.close()
 
@@ -92,7 +92,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         new_chat_group.save()
 
         self.send_event_to_client(
-            "group:created",
+            "group:create",
             {
                 "chat_group_id": new_chat_group.pk,
                 "name": new_chat_group.name,
@@ -142,7 +142,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         ]
 
         self.send_event_to_client(
-            "group:fetched", {"members": members, "messages": messages}
+            "group:fetch", {"members": members, "messages": messages}
         )
 
     def message_group_event(self, message):
@@ -182,11 +182,12 @@ class ChatConsumer(JsonWebsocketConsumer):
                 "from_user": user.id,
                 "from_chat_group": chat_group.pk,
                 "message": new_message.message,
+                "date_sent": str(new_message.date_sent),
             },
         )
 
     def handle_chat_message(self, event):
-        self.send_event_to_client("group:messaged", event)
+        self.send_event_to_client("group:message", event)
 
     def send_event_to_client(self, event_type: str, message):
         self.send_json({"event_type": event_type, "message": message})
