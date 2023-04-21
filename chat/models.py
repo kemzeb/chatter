@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.timezone import now
 
 from chatter import settings
 
@@ -22,9 +23,11 @@ class ChatGroupMembership(models.Model):
 
 class ChatMessage(models.Model):
     from_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    from_chat_group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE)
+    from_chat_group = models.ForeignKey(
+        ChatGroup, on_delete=models.CASCADE, related_name="messages"
+    )
     message = models.TextField()
-    date_sent = models.DateField(auto_now_add=True)
+    sent_on = models.DateTimeField(default=now)
 
 
 class ChatGroupInvite(models.Model):

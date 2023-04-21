@@ -134,10 +134,10 @@ class ChatConsumer(JsonWebsocketConsumer):
                 "user_id": message.from_user.id,
                 "id": message.pk,
                 "message": message.message,
-                "date_sent": message.date_sent.ctime(),
+                "sent_on": str(message.sent_on),
             }
             for message in ChatMessage.objects.filter(from_chat_group=chat_group).only(
-                "from_user", "id", "message", "date_sent"
+                "from_user", "id", "message", "sent_on"
             )
         ]
 
@@ -182,7 +182,7 @@ class ChatConsumer(JsonWebsocketConsumer):
                 "from_user": user.id,
                 "from_chat_group": chat_group.pk,
                 "message": new_message.message,
-                "date_sent": str(new_message.date_sent),
+                "sent_on": str(new_message.sent_on),
             },
         )
 

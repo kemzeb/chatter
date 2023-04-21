@@ -130,8 +130,8 @@ class TestChatConsumer:
             assert message_model
             assert "user_id" in message and message["user_id"] == user_1.id
             assert "message" in message and message["message"] == message_model.message
-            assert "date_sent" in message
-            assert message["date_sent"] == message_model.date_sent.ctime()
+            assert "sent_on" in message
+            assert message["sent_on"] == str(message_model.sent_on)
 
     async def test_event_group_message(self, communicator1, user_1):
         chat_group = await ChatGroup.objects.aget(name="Precursors rule")
@@ -158,4 +158,4 @@ class TestChatConsumer:
         assert msg["from_user"] == user_1.id
         assert msg["from_chat_group"] == chat_group.pk
         assert msg["message"] == my_message
-        assert "date_sent" in msg
+        assert "sent_on" in msg
