@@ -24,7 +24,7 @@ function useAuthAxios() {
         originalRequest._retry = true;
 
         if (error.response.status == 401) {
-          const refreshResponse = await axios.post(`${baseUrl}/auth/api/login/refresh/`, {
+          const refreshResponse = await axios.post(`${baseUrl}/api/users/auth/login/refresh/`, {
             refresh: authTokens.refresh
           });
           localStorage.setItem('authTokens', JSON.stringify(refreshResponse.data));

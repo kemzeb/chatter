@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
     let status = -1;
 
     const response = await axios
-      .post(`${baseUrl}/auth/api/login/`, {
+      .post(`${baseUrl}/api/users/auth/login/`, {
         username: e.target.username.value,
         password: e.target.password.value
       })

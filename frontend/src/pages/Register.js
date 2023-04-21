@@ -11,7 +11,7 @@ function Register() {
     e.preventDefault();
 
     axios
-      .post(`${baseUrl}/auth/api/register/`, {
+      .post(`${baseUrl}/api/users/auth/register/`, {
         email: e.target.email.value,
         username: e.target.username.value,
         password: e.target.password.value
