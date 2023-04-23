@@ -8,6 +8,9 @@ from channels.testing import WebsocketCommunicator
 from chat.models import ChatGroup, ChatMessage
 from chatter.asgi import application
 
+# FIXME: These tests need to be much more robust. There are edge cases that are not
+# being handled and assertions that don't exist yet but we should be making.
+
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
@@ -62,8 +65,7 @@ class TestChatConsumer:
             },
         )
 
-        group_msg = await communicator1_without_handling.receive_from()
-        group_msg = json.loads(group_msg)
+        group_msg = await communicator1_without_handling.receive_json_from()
         assert "message" in group_msg
 
         await communicator1_without_handling.disconnect()
@@ -73,9 +75,7 @@ class TestChatConsumer:
         await communicator1.send_json_to(
             {"event_type": "group:create", "message": {"name": name}}
         )
-        response = await communicator1.receive_from()
-        response = json.loads(response)
-
+        response = await communicator1.receive_json_from()
         assert "event_type" in response and response["event_type"] == "group:create"
 
         assert "message" in response
@@ -101,13 +101,9 @@ class TestChatConsumer:
             {"event_type": "group:fetch", "message": {"chat_group_id": chat_group.pk}}
         )
 
-        response = await communicator1.receive_from()
-        response = json.loads(response)
-
+        response = await communicator1.receive_json_from()
         assert response["event_type"] == "group:fetch"
-
         msg = response["message"]
-
         assert "members" in msg
         assert type(msg["members"]) == list
 
@@ -145,10 +141,7 @@ class TestChatConsumer:
                 },
             }
         )
-
-        response = await communicator1.receive_from()
-        response = json.loads(response)
-
+        response = await communicator1.receive_json_from()
         assert "event_type" in response
         assert response["event_type"] == "group:message"
 
@@ -159,3 +152,16 @@ class TestChatConsumer:
         assert msg["from_chat_group"] == chat_group.pk
         assert msg["message"] == my_message
         assert "sent_on" in msg
+
+    async def test_friend_request(self, communicator1, communicator2, user_2):
+        await communicator1.send_json_to(
+            {"event_type": "user:friendrequest", "message": {"addressee": user_2.id}}
+        )
+
+        response = await communicator1.receive_json_from()
+        assert "event_type" in response
+        assert response["event_type"] == "user:friendrequest"
+
+        response = await communicator2.receive_json_from()
+        assert "event_type" in response
+        assert response["event_type"] == "user:friendrequest"

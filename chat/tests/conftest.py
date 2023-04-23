@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from chat.models import ChatGroup, ChatMessage
 from chatter.asgi import application
+from users.models import ChatterUser
 
 User = get_user_model()
 
@@ -46,6 +47,20 @@ def user_1():
 
 
 @pytest.fixture
+def user_2():
+    """
+    A user with whose not apart of any chat groups nor has any friends.
+    """
+    user2 = ChatterUser.objects.create(
+        username="markoftheoutsider",
+        email="mark@example.com",
+        password="bestiesxBWAWithCorvo!!",
+    )
+
+    return user2
+
+
+@pytest.fixture
 def communicator1_without_handling(origin_header, user_1) -> WebsocketCommunicator:
     """
     Creates a `WebsocketCommunicator` using the `user_1` fixture. You will need to call
@@ -78,3 +93,25 @@ async def communicator1(communicator1_without_handling):
 
     yield communicator1_without_handling
     await communicator1_without_handling.disconnect()
+
+
+@pytest_asyncio.fixture
+async def communicator2(user_2, origin_header):
+    """
+    Just like `communicator1` but uses a channel associated to `user_2`.
+    """
+    jwt = RefreshToken.for_user(user_2)
+    comm = WebsocketCommunicator(
+        application,
+        f"/ws/chat?token={jwt.access_token}",
+        headers=[origin_header],
+    )
+    connected, _ = await comm.connect()
+    if not connected:
+        pytest.fail("WebsocketCommunicator failed to connect.")
+
+    # Ignore "group:connected" event.
+    await comm.receive_from()
+
+    yield comm
+    await comm.disconnect()
