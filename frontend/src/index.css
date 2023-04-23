@@ -16,3 +16,7 @@ body {
   color: var(--text-color);
   margin: 0px;
 }
+
+#root {
+  height: 100vh;
+}
