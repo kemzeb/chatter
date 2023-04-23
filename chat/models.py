@@ -26,7 +26,7 @@ class ChatMessage(models.Model):
     from_chat_group = models.ForeignKey(
         ChatGroup, on_delete=models.CASCADE, related_name="messages"
     )
-    message = models.TextField()
+    message = models.CharField(max_length=1800)
     sent_on = models.DateTimeField(default=now)
 
 
