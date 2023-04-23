@@ -153,7 +153,7 @@ class ChatConsumer(JsonWebsocketConsumer):
             }
             for message in ChatMessage.objects.filter(from_chat_group=chat_group)
             .only("from_user", "id", "message", "sent_on")
-            .order_by("-sent_on")
+            .order_by("sent_on")
         ]
 
         self.send_event_to_client(
