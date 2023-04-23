@@ -2,13 +2,8 @@ from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
 from django.db import IntegrityError
 
+from chat import serializers
 from chat.models import ChatGroup, ChatMessage
-from chat.serializers import (
-    CreateChatGroupSerializer,
-    FetchChatGroupSerializer,
-    FriendRequestSerializer,
-    MessageChatGroupSerializer,
-)
 from users.models import ChatterUser, FriendRequest
 
 from .utils import EventErrCode, EventName
@@ -63,7 +58,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         chat_groups = ChatGroup.objects.filter(members__id=user.id)
 
         async_to_sync(self.channel_layer.group_discard)(
-            f"user_{user.username}", self.channel_name
+            self._get_group_name_of_user(user), self.channel_name
         )
 
         for chat_group in chat_groups:
@@ -72,10 +67,11 @@ class ChatConsumer(JsonWebsocketConsumer):
             )
 
     event_type = {
-        "group:create": "create_group_event",
-        "group:fetch": "fetch_group_event",
-        "group:message": "message_group_event",
-        "user:friendrequest": "friend_request_event",
+        str(EventName.GROUP_CREATE): "create_group_event",
+        str(EventName.GROUP_FETCH): "fetch_group_event",
+        str(EventName.GROUP_MESSAGE): "message_group_event",
+        str(EventName.GROUP_ADD): "group_add_event",
+        str(EventName.USER_FRIEND_REQUEST): "friend_request_event",
     }
 
     def receive_json(self, content):
@@ -91,7 +87,7 @@ class ChatConsumer(JsonWebsocketConsumer):
 
     def create_group_event(self, message):
         user = self.scope["user"]
-        serializer = CreateChatGroupSerializer(data=message)
+        serializer = serializers.CreateChatGroupSerializer(data=message)
 
         if not serializer.is_valid():
             self.send_err_event_to_client(EventErrCode.SERIALIZATION)
@@ -116,7 +112,7 @@ class ChatConsumer(JsonWebsocketConsumer):
 
     def fetch_group_event(self, message):
         user = self.scope["user"]
-        serializer = FetchChatGroupSerializer(data=message)
+        serializer = serializers.FetchChatGroupSerializer(data=message)
 
         if not serializer.is_valid():
             self.send_err_event_to_client(EventErrCode.SERIALIZATION)
@@ -166,7 +162,7 @@ class ChatConsumer(JsonWebsocketConsumer):
 
     def message_group_event(self, message):
         user = self.scope["user"]
-        serializer = MessageChatGroupSerializer(data=message)
+        serializer = serializers.MessageChatGroupSerializer(data=message)
 
         if not serializer.is_valid():
             self.send_err_event_to_client(EventErrCode.SERIALIZATION)
@@ -207,7 +203,7 @@ class ChatConsumer(JsonWebsocketConsumer):
 
     def friend_request_event(self, message):
         user = self.scope["user"]
-        serializer = FriendRequestSerializer(data=message)
+        serializer = serializers.FriendRequestSerializer(data=message)
         if not serializer.is_valid():
             self.send_err_event_to_client(EventErrCode.SERIALIZATION)
             return
@@ -248,7 +244,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         else:
             # Send to addressee if they have an open channel.
             async_to_sync(self.channel_layer.group_send)(
-                f"user_{addressee.username}",
+                self._get_group_name_of_user(addressee),
                 {
                     "type": "handle_friend_request",
                     "id": friend_request.pk,
@@ -257,14 +253,81 @@ class ChatConsumer(JsonWebsocketConsumer):
             )
             self.handle_friend_request({"id": friend_request.pk, "requester": user.id})
 
+    def group_add_event(self, message):
+        serializer = serializers.ChatGroupAddUserSerializer(data=message)
+        if not serializer.is_valid():
+            self.send_err_event_to_client(EventErrCode.SERIALIZATION)
+            return
+
+        new_member_id = serializer.data["new_member"]
+
+        # Make sure the user exists.
+        user_manager = ChatterUser.objects.filter(id=new_member_id)
+        if not user_manager.exists():
+            self.send_err_event_to_client(EventErrCode.BAD_MESSAGE)
+            return
+
+        new_member = user_manager[0]
+        user = self.scope["user"]
+
+        # Make sure the user and new member are friends. Otherwise anyone can add you to
+        # their chat group!
+        if not new_member.friends.filter(id=user.id).exists():
+            self.send_err_event_to_client(EventErrCode.FORBIDDEN)
+            return
+
+        chat_group_id = serializer.data["chat_group"]
+
+        # Make sure the chat group exists.
+        chat_group_manager = ChatGroup.objects.filter(id=chat_group_id)
+        if not chat_group_manager.exists():
+            self.send_err_event_to_client(EventErrCode.BAD_MESSAGE)
+            return
+
+        chat_group = chat_group_manager[0]
+
+        # Make sure the user owns the group.
+        if chat_group.owner != user:
+            self.send_err_event_to_client(EventErrCode.FORBIDDEN)
+            return
+
+        chat_group.members.add(new_member)
+
+        message = {
+            "owner": user.id,
+            "chat_group": chat_group.pk,
+            "name": chat_group.name,
+        }
+
+        # Send the message to the new member if they have an open channel.
+        async_to_sync(self.channel_layer.group_send)(
+            self._get_group_name_of_user(new_member),
+            {"type": "handle_group_add", **message},
+        )
+
+        # Send a response to the client to let them know that the add
+        # was successful.
+        self.send_event_to_client(EventName.GROUP_ADD, message)
+
     def handle_chat_message(self, event):
         self.send_event_to_client(EventName.GROUP_MESSAGE, event)
 
     def handle_friend_request(self, event):
         self.send_event_to_client(EventName.USER_FRIEND_REQUEST, event)
 
+    def handle_group_add(self, event):
+        chat_group_id = event["chat_group"]
+        async_to_sync(self.channel_layer.group_add)(
+            f"chat_{chat_group_id}", self.channel_name
+        )
+
+        self.send_event_to_client(EventName.GROUP_ADD, event)
+
     def send_event_to_client(self, event_type: EventName, message):
         self.send_json({"event_type": event_type.value, "message": message})
 
     def send_err_event_to_client(self, err_type: EventErrCode):
         self.send_event_to_client(EventName.ERROR_EVENT, err_type.value)
+
+    def _get_group_name_of_user(self, user) -> str:
+        return f"user_{user.username}"

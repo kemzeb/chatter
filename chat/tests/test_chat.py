@@ -6,6 +6,7 @@ from channels.layers import get_channel_layer
 from channels.testing import WebsocketCommunicator
 
 from chat.models import ChatGroup, ChatMessage
+from chat.utils import EventName
 from chatter.asgi import application
 
 # FIXME: These tests need to be much more robust. There are edge cases that are not
@@ -165,3 +166,22 @@ class TestChatConsumer:
         response = await communicator2.receive_json_from()
         assert "event_type" in response
         assert response["event_type"] == "user:friendrequest"
+
+    async def test_group_add(self, communicator1, user_1, communicator2, user_2):
+        await database_sync_to_async(user_1.friends.add)(user_2)
+
+        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+        await communicator1.send_json_to(
+            {
+                "event_type": str(EventName.GROUP_ADD),
+                "message": {"chat_group": chat_group.pk, "new_member": user_2.id},
+            }
+        )
+
+        response = await communicator1.receive_json_from()
+        assert "event_type" in response
+        assert response["event_type"] == str(EventName.GROUP_ADD)
+
+        response = await communicator2.receive_json_from()
+        assert "event_type" in response
+        assert response["event_type"] == str(EventName.GROUP_ADD)

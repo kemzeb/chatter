@@ -25,3 +25,8 @@ class FriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FriendRequest
         fields = ["addressee"]
+
+
+class ChatGroupAddUserSerializer(serializers.Serializer):
+    chat_group = serializers.IntegerField(min_value=0)
+    new_member = serializers.IntegerField(min_value=0)
