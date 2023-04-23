@@ -11,6 +11,8 @@ from chat.serializers import (
 )
 from users.models import ChatterUser, FriendRequest
 
+from .utils import EventErrCode, EventName
+
 
 class ChatConsumer(JsonWebsocketConsumer):
     """
@@ -52,7 +54,7 @@ class ChatConsumer(JsonWebsocketConsumer):
                     f"chat_{chat_group.pk}", self.channel_name
                 )
 
-            self.send_event_to_client("group:connect", chat_group_list)
+            self.send_event_to_client(EventName.GROUP_CONNECT, chat_group_list)
         else:
             self.close()
 
@@ -82,7 +84,7 @@ class ChatConsumer(JsonWebsocketConsumer):
             or ("message" not in content)
             or (content["event_type"] not in self.event_type)
         ):
-            self.send_err_event_to_client("bad message")
+            self.send_err_event_to_client(EventErrCode.BAD_MESSAGE)
             return
 
         getattr(self, self.event_type[content["event_type"]])(content["message"])
@@ -92,7 +94,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         serializer = CreateChatGroupSerializer(data=message)
 
         if not serializer.is_valid():
-            self.send_err_event_to_client("serialization")
+            self.send_err_event_to_client(EventErrCode.SERIALIZATION)
             return
 
         data = serializer.data
@@ -105,7 +107,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         new_chat_group.save()
 
         self.send_event_to_client(
-            "group:create",
+            EventName.GROUP_CREATE,
             {
                 "chat_group_id": new_chat_group.pk,
                 "name": new_chat_group.name,
@@ -117,7 +119,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         serializer = FetchChatGroupSerializer(data=message)
 
         if not serializer.is_valid():
-            self.send_err_event_to_client("serialization")
+            self.send_err_event_to_client(EventErrCode.SERIALIZATION)
             return
 
         data = serializer.data
@@ -126,7 +128,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         chat_group_manager = ChatGroup.objects.filter(id=data["chat_group_id"])
 
         if not chat_group_manager.exists():
-            self.send_err_event_to_client("forbidden")
+            self.send_err_event_to_client(EventErrCode.FORBIDDEN)
             return
 
         chat_group = chat_group_manager[0]
@@ -135,7 +137,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         members_manager = chat_group.members.filter(id=user.id)
 
         if not members_manager.exists():
-            self.send_err_event_to_client("forbidden")
+            self.send_err_event_to_client(EventErrCode.FORBIDDEN)
             return
 
         members = [
@@ -159,7 +161,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         ]
 
         self.send_event_to_client(
-            "group:fetch", {"members": members, "messages": messages}
+            EventName.GROUP_FETCH, {"members": members, "messages": messages}
         )
 
     def message_group_event(self, message):
@@ -167,7 +169,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         serializer = MessageChatGroupSerializer(data=message)
 
         if not serializer.is_valid():
-            self.send_err_event_to_client("serialization")
+            self.send_err_event_to_client(EventErrCode.SERIALIZATION)
             return
 
         data = serializer.data
@@ -176,7 +178,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         chat_group_manager = ChatGroup.objects.filter(id=data["from_chat_group"])
 
         if not chat_group_manager.exists():
-            self.send_err_event_to_client("forbidden")
+            self.send_err_event_to_client(EventErrCode.BAD_MESSAGE)
             return
 
         chat_group = chat_group_manager[0]
@@ -185,7 +187,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         members_manager = chat_group.members.filter(id=user.id)
 
         if not members_manager.exists():
-            self.send_err_event_to_client("forbidden")
+            self.send_err_event_to_client(EventErrCode.FORBIDDEN)
             return
 
         new_message = ChatMessage.objects.create(
@@ -207,19 +209,19 @@ class ChatConsumer(JsonWebsocketConsumer):
         user = self.scope["user"]
         serializer = FriendRequestSerializer(data=message)
         if not serializer.is_valid():
-            self.send_err_event_to_client("serialization")
+            self.send_err_event_to_client(EventErrCode.SERIALIZATION)
             return
 
         addressee_id = serializer.data["addressee"]
 
         # Make sure the user is not trying to add themselves.
         if user.id == addressee_id:
-            self.send_err_event_to_client("bad request")
+            self.send_err_event_to_client(EventErrCode.BAD_MESSAGE)
             return
 
         user_manger = ChatterUser.objects.filter(id=addressee_id)
         if not user_manger.exists():
-            self.send_err_event_to_client("bad request")
+            self.send_err_event_to_client(EventErrCode.BAD_MESSAGE)
             return
 
         addressee = user_manger.first()
@@ -229,12 +231,12 @@ class ChatConsumer(JsonWebsocketConsumer):
             requester=addressee, addressee=user
         )
         if friend_request_manager.exists():
-            self.send_err_event_to_client("bad request")
+            self.send_err_event_to_client(EventErrCode.BAD_MESSAGE)
             return
 
         # Make sure these users are not already friends.
         if user.friends.filter(id=addressee_id).exists():
-            self.send_err_event_to_client("bad request")
+            self.send_err_event_to_client(EventErrCode.BAD_MESSAGE)
             return
 
         try:
@@ -242,7 +244,7 @@ class ChatConsumer(JsonWebsocketConsumer):
                 requester=user, addressee=addressee
             )
         except IntegrityError:
-            self.send_err_event_to_client("bad request")
+            self.send_err_event_to_client(EventErrCode.BAD_MESSAGE)
         else:
             # Send to addressee if they have an open channel.
             async_to_sync(self.channel_layer.group_send)(
@@ -256,13 +258,13 @@ class ChatConsumer(JsonWebsocketConsumer):
             self.handle_friend_request({"id": friend_request.pk, "requester": user.id})
 
     def handle_chat_message(self, event):
-        self.send_event_to_client("group:message", event)
+        self.send_event_to_client(EventName.GROUP_MESSAGE, event)
 
     def handle_friend_request(self, event):
-        self.send_event_to_client("user:friendrequest", event)
+        self.send_event_to_client(EventName.USER_FRIEND_REQUEST, event)
 
-    def send_event_to_client(self, event_type: str, message):
-        self.send_json({"event_type": event_type, "message": message})
+    def send_event_to_client(self, event_type: EventName, message):
+        self.send_json({"event_type": event_type.value, "message": message})
 
-    def send_err_event_to_client(self, err_type: str):
-        self.send_event_to_client("error", err_type)
+    def send_err_event_to_client(self, err_type: EventErrCode):
+        self.send_event_to_client(EventName.ERROR_EVENT, err_type.value)
