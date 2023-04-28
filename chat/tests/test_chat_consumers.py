@@ -71,31 +71,6 @@ class TestChatConsumer:
 
         await communicator1_without_handling.disconnect()
 
-    async def test_event_group_create(self, communicator1):
-        name = "Veldin rocks"
-        await communicator1.send_json_to(
-            {"event_type": "group:create", "message": {"name": name}}
-        )
-        response = await communicator1.receive_json_from()
-        assert "event_type" in response and response["event_type"] == "group:create"
-
-        assert "message" in response
-        msg = response["message"]
-        assert "chat_group_id" in msg and type(msg["chat_group_id"]) == int
-        assert "name" in msg and msg["name"] == name
-
-        id = msg["chat_group_id"]
-        chat_group_manager = await database_sync_to_async(ChatGroup.objects.filter)(
-            id=id
-        )
-        assert await chat_group_manager.aexists()
-
-        new_chat_group = await chat_group_manager.afirst()
-        membership_row_count = await new_chat_group.members.acount()
-        assert (
-            membership_row_count == 1
-        ), "Owner should be a member of their chat group."
-
     async def test_event_group_fetch(self, communicator1, user_1):
         chat_group = await ChatGroup.objects.aget(name="Precursors rule")
         await communicator1.send_json_to(

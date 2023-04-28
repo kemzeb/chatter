@@ -18,7 +18,6 @@ class ChatConsumer(JsonWebsocketConsumer):
     It contains custom events that are sent between
     client, server, and channel layer. The following
     represent the custom event names:
-    - group:create          Create a chat group for the given user
     - group:fetch           Fetches members and messages of a chat group
     - group:message         Receive client messages and send to named group
     - user:friendrequest    Create a friend request record and send it to addressee
@@ -84,31 +83,6 @@ class ChatConsumer(JsonWebsocketConsumer):
             return
 
         getattr(self, self.event_type[content["event_type"]])(content["message"])
-
-    def create_group_event(self, message):
-        user = self.scope["user"]
-        serializer = serializers.CreateChatGroupSerializer(data=message)
-
-        if not serializer.is_valid():
-            self.send_err_event_to_client(EventErrCode.SERIALIZATION)
-            return
-
-        data = serializer.data
-
-        # Create a new chat group for this user.
-        new_chat_group = ChatGroup.objects.create(owner=user, name=data["name"])
-
-        # Add user as a member of their chat group.
-        new_chat_group.members.add(user)
-        new_chat_group.save()
-
-        self.send_event_to_client(
-            EventName.GROUP_CREATE,
-            {
-                "chat_group_id": new_chat_group.pk,
-                "name": new_chat_group.name,
-            },
-        )
 
     def fetch_group_event(self, message):
         user = self.scope["user"]

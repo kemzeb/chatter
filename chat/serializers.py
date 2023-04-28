@@ -8,7 +8,7 @@ from .models import ChatGroup, ChatMessage
 class CreateChatGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatGroup
-        fields = ["name"]
+        fields = ["owner", "name"]
 
 
 class FetchChatGroupSerializer(serializers.Serializer):
