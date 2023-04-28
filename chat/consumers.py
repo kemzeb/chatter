@@ -18,7 +18,6 @@ class ChatConsumer(JsonWebsocketConsumer):
     It contains custom events that are sent between
     client, server, and channel layer. The following
     represent the custom event names:
-    - group:fetch           Fetches members and messages of a chat group
     - group:message         Receive client messages and send to named group
     - user:friendrequest    Create a friend request record and send it to addressee
     """
@@ -66,8 +65,6 @@ class ChatConsumer(JsonWebsocketConsumer):
             )
 
     event_type = {
-        str(EventName.GROUP_CREATE): "create_group_event",
-        str(EventName.GROUP_FETCH): "fetch_group_event",
         str(EventName.GROUP_MESSAGE): "message_group_event",
         str(EventName.GROUP_ADD): "group_add_event",
         str(EventName.USER_FRIEND_REQUEST): "friend_request_event",
@@ -83,56 +80,6 @@ class ChatConsumer(JsonWebsocketConsumer):
             return
 
         getattr(self, self.event_type[content["event_type"]])(content["message"])
-
-    def fetch_group_event(self, message):
-        user = self.scope["user"]
-        serializer = serializers.FetchChatGroupSerializer(data=message)
-
-        if not serializer.is_valid():
-            self.send_err_event_to_client(EventErrCode.SERIALIZATION)
-            return
-
-        data = serializer.data
-
-        # Make sure the group exists.
-        chat_group_manager = ChatGroup.objects.filter(id=data["chat_group_id"])
-
-        if not chat_group_manager.exists():
-            self.send_err_event_to_client(EventErrCode.FORBIDDEN)
-            return
-
-        chat_group = chat_group_manager[0]
-
-        # Make sure the user is a member of the group.
-        members_manager = chat_group.members.filter(id=user.id)
-
-        if not members_manager.exists():
-            self.send_err_event_to_client(EventErrCode.FORBIDDEN)
-            return
-
-        members = [
-            {"id": member.id, "username": member.username}
-            for member in chat_group.members.all().only("id", "username")
-        ]
-
-        # FIXME: Fetching all the messages of a chat group is not ideal. We should only
-        # fetch a fixed amount and expose another WebSocket event that fetches more
-        # messages depending on a timestamp given.
-        messages = [
-            {
-                "user_id": message.from_user.id,
-                "id": message.pk,
-                "message": message.message,
-                "sent_on": str(message.sent_on),
-            }
-            for message in ChatMessage.objects.filter(from_chat_group=chat_group)
-            .only("from_user", "id", "message", "sent_on")
-            .order_by("sent_on")
-        ]
-
-        self.send_event_to_client(
-            EventName.GROUP_FETCH, {"members": members, "messages": messages}
-        )
 
     def message_group_event(self, message):
         user = self.scope["user"]

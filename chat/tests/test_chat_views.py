@@ -3,10 +3,11 @@ import json
 import pytest
 from django.test import RequestFactory
 from rest_framework import status
+from rest_framework.serializers import DateTimeField
 from rest_framework.test import force_authenticate
 
-from chat.models import ChatGroup
-from chat.views import CreateChatGroup
+from chat.models import ChatGroup, ChatMessage
+from chat.views import ChatGroupDetail, CreateChatGroup
 
 
 @pytest.mark.django_db
@@ -30,4 +31,41 @@ def test_create_chat_group(user_1):
 
     response.render()
     content = json.loads(response.content)
-    assert "id" in content and content["id"] == chat_group.pk
+    assert content["id"] == chat_group.pk
+
+
+@pytest.mark.django_db
+def test_chat_group_detail(user_1):
+    factory = RequestFactory()
+    view = ChatGroupDetail.as_view()
+    chat_group = ChatGroup.objects.get(name="Precursors rule")
+
+    request = factory.get(f"/api/chat/chatgroups/{chat_group.pk}/")
+    force_authenticate(request, user=user_1)
+    response = view(request, pk=chat_group.pk)
+
+    assert response.status_code == status.HTTP_200_OK
+
+    response.render()
+    data = json.loads(response.content)
+
+    assert type(data) == dict
+    assert "id" in data
+    assert data["owner"]["id"] == user_1.id
+    assert data["owner"]["username"] == user_1.username
+
+    for member in data["members"]:
+        manager = chat_group.members.filter(id=member["id"])
+        assert manager.exists()
+        member_model = manager[0]
+        assert "username" in member and member["username"] == member_model.username
+
+    for message in data["messages"]:
+        manager = ChatMessage.objects.filter(id=message["id"])
+        assert manager.exists()
+        message_model = manager[0]
+        assert message["id"] == message_model.pk
+        assert message["from_user"] == user_1.id
+        assert message["message"] == message_model.message
+        model_sent_on = DateTimeField().to_representation(message_model.sent_on)
+        assert message["sent_on"] == model_sent_on

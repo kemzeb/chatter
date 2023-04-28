@@ -5,7 +5,7 @@ from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
 from channels.testing import WebsocketCommunicator
 
-from chat.models import ChatGroup, ChatMessage
+from chat.models import ChatGroup
 from chat.utils import EventName
 from chatter.asgi import application
 
@@ -70,40 +70,6 @@ class TestChatConsumer:
         assert "message" in group_msg
 
         await communicator1_without_handling.disconnect()
-
-    async def test_event_group_fetch(self, communicator1, user_1):
-        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
-        await communicator1.send_json_to(
-            {"event_type": "group:fetch", "message": {"chat_group_id": chat_group.pk}}
-        )
-
-        response = await communicator1.receive_json_from()
-        assert response["event_type"] == "group:fetch"
-        msg = response["message"]
-        assert "members" in msg
-        assert type(msg["members"]) == list
-
-        for member in msg["members"]:
-            manager = await database_sync_to_async(chat_group.members.filter)(
-                id=member["id"]
-            )
-            member_model = await manager.afirst()
-            assert member_model
-            assert "username" in member and member["username"] == member_model.username
-
-        assert "messages" in msg
-        assert type(msg["messages"]) == list
-
-        for message in msg["messages"]:
-            manager = await database_sync_to_async(ChatMessage.objects.filter)(
-                id=message["id"]
-            )
-            message_model = await manager.afirst()
-            assert message_model
-            assert "user_id" in message and message["user_id"] == user_1.id
-            assert "message" in message and message["message"] == message_model.message
-            assert "sent_on" in message
-            assert message["sent_on"] == str(message_model.sent_on)
 
     async def test_event_group_message(self, communicator1, user_1):
         chat_group = await ChatGroup.objects.aget(name="Precursors rule")
