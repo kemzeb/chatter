@@ -49,7 +49,7 @@ def user_1():
 @pytest.fixture
 def user_2():
     """
-    A user with whose not apart of any chat groups nor has any friends.
+    A user whose not apart of any chat groups nor has any friends.
     """
     user2 = ChatterUser.objects.create(
         username="markoftheoutsider",
@@ -58,6 +58,24 @@ def user_2():
     )
 
     return user2
+
+
+@pytest.fixture
+def user_drek(user_1):
+    """
+    A user whose friends with `user_1` and is in their "Precursors rule" chat group.
+    """
+    user3 = ChatterUser.objects.create(
+        username="drekthechairman",
+        email="drek@orxon.com",
+        password="tryNottoLeaveanyMarks>:)",
+    )
+    user3.friends.add(user_1)
+
+    chat_group = ChatGroup.objects.get(name="Precursors rule")
+    chat_group.members.add(user3)
+
+    return user3
 
 
 @pytest.fixture
@@ -101,6 +119,28 @@ async def communicator2(user_2, origin_header):
     Just like `communicator1` but uses a channel associated to `user_2`.
     """
     jwt = RefreshToken.for_user(user_2)
+    comm = WebsocketCommunicator(
+        application,
+        f"/ws/chat?token={jwt.access_token}",
+        headers=[origin_header],
+    )
+    connected, _ = await comm.connect()
+    if not connected:
+        pytest.fail("WebsocketCommunicator failed to connect.")
+
+    # Ignore "group:connected" event.
+    await comm.receive_from()
+
+    yield comm
+    await comm.disconnect()
+
+
+@pytest_asyncio.fixture
+async def communicator_drek(user_drek, origin_header):
+    """
+    Just like `communicator1` but uses a channel associated to `user_drek`.
+    """
+    jwt = RefreshToken.for_user(user_drek)
     comm = WebsocketCommunicator(
         application,
         f"/ws/chat?token={jwt.access_token}",

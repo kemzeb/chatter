@@ -61,7 +61,7 @@ class TestChatConsumer:
         await channel_layer.group_send(
             f"chat_{a_chat_group_id}",
             {
-                "type": "handle_chat_message",
+                "type": "handle_create_message",
                 "message": "Hello world!",
             },
         )
@@ -70,30 +70,6 @@ class TestChatConsumer:
         assert "message" in group_msg
 
         await communicator1_without_handling.disconnect()
-
-    async def test_event_group_message(self, communicator1, user_1):
-        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
-        my_message = "Need to drown my sorrows in dark eco."
-        await communicator1.send_json_to(
-            {
-                "event_type": "group:message",
-                "message": {
-                    "from_chat_group": chat_group.pk,
-                    "message": my_message,
-                },
-            }
-        )
-        response = await communicator1.receive_json_from()
-        assert "event_type" in response
-        assert response["event_type"] == "group:message"
-
-        assert "message" in response
-        msg = response["message"]
-        assert type(msg) == dict
-        assert msg["from_user"] == user_1.id
-        assert msg["from_chat_group"] == chat_group.pk
-        assert msg["message"] == my_message
-        assert "sent_on" in msg
 
     async def test_friend_request(self, communicator1, communicator2, user_2):
         await communicator1.send_json_to(

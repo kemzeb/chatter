@@ -32,7 +32,7 @@ class ChatGroupDetailSerializer(serializers.ModelSerializer):
         return ChatMessageSerializer(messages, many=True).data
 
 
-class MessageChatGroupSerializer(serializers.ModelSerializer):
+class CreateMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
         fields = ["from_chat_group", "message"]
