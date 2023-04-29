@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import UserForm from '../components/UserForm';
-import { baseUrl } from '../utils/consts';
 import '../components/UserForm.css';
 
 function Register() {
@@ -11,7 +10,7 @@ function Register() {
     e.preventDefault();
 
     axios
-      .post(`${baseUrl}/api/users/auth/register/`, {
+      .post(`/api/users/auth/register/`, {
         email: e.target.email.value,
         username: e.target.username.value,
         password: e.target.password.value

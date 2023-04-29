@@ -2,7 +2,6 @@ import axios from 'axios';
 import { PropTypes } from 'prop-types';
 import React, { useState, createContext } from 'react';
 import jwt_decode from 'jwt-decode';
-import { baseUrl } from './consts';
 
 const authTokensCookieName = 'authTokens';
 
@@ -21,7 +20,7 @@ export function AuthProvider({ children }) {
     let status = -1;
 
     const response = await axios
-      .post(`${baseUrl}/api/users/auth/login/`, {
+      .post(`/api/users/auth/login/`, {
         username: e.target.username.value,
         password: e.target.password.value
       })
