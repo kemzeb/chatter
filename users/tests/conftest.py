@@ -6,7 +6,7 @@ from users.models import ChatterUser
 @pytest.fixture
 def user_1():
     """
-    Creates a 3 users, and returns a user that is friends with 2 of them.
+    Creates 4 users, and returns a user that is friends with 2 of them.
     """
     user1 = ChatterUser.objects.create(
         username="qwarkinator", email="qwark@example.com", password="fight_crime!12"
@@ -20,6 +20,12 @@ def user_1():
         username="voxx",
         email="voxx@dreadzone.com",
         password="kajsdfjal23542Aw",
+    )
+
+    ChatterUser.objects.create(
+        username="sewer_crystals_lover",
+        email="theplumber@solanaplumbing.com",
+        password="rac1rac2rac3",
     )
 
     return user1

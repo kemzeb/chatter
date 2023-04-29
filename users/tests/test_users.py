@@ -13,7 +13,7 @@ def test_friends_list_view(user_1):
     factory = RequestFactory()
     view = FriendsListView.as_view()
 
-    request = factory.get(f"/api/users/{user_1.id}/friends/")
+    request = factory.get("/api/users/friends/")
     force_authenticate(request, user=user_1)
     response = view(request)
 
@@ -26,7 +26,8 @@ def test_friends_list_view(user_1):
 
 
 @pytest.mark.django_db
-def test_user_search_view(user_1, add_multiple_users):
+@pytest.mark.usefixtures("add_multiple_users")
+def test_user_search_view(user_1):
     factory = RequestFactory()
     view = UserSearchView.as_view()
 

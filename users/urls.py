@@ -18,5 +18,5 @@ urlpatterns = [
             ]
         ),
     ),
-    path("<int:pk>/friends/", FriendsListView.as_view()),
+    path("friends/", FriendsListView.as_view()),
 ]
