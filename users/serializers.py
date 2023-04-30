@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.serializers import ModelSerializer
 
+from users import models
+
 
 # https://stackoverflow.com/questions/16857450/how-to-register-users-in-django-rest-framework
 class RegisterSerializer(ModelSerializer):
@@ -31,3 +33,17 @@ class ChatterUserSerializer(ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ["id", "username"]
+
+
+class CreateFriendRequestSerializer(ModelSerializer):
+    """Exists only to validate input for `users.views.CreateFriendRequestView`."""
+
+    class Meta:
+        model = models.FriendRequest
+        fields = ["addressee"]
+
+
+class FriendRequestSerializer(ModelSerializer):
+    class Meta:
+        model = models.FriendRequest
+        fields = "__all__"

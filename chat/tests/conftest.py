@@ -106,9 +106,6 @@ async def communicator1(communicator1_without_handling):
     if not connected:
         pytest.fail("WebsocketCommunicator failed to connect.")
 
-    # Ignore "group:connected" event.
-    await communicator1_without_handling.receive_from()
-
     yield communicator1_without_handling
     await communicator1_without_handling.disconnect()
 
@@ -128,9 +125,6 @@ async def communicator2(user_2, origin_header):
     if not connected:
         pytest.fail("WebsocketCommunicator failed to connect.")
 
-    # Ignore "group:connected" event.
-    await comm.receive_from()
-
     yield comm
     await comm.disconnect()
 
@@ -149,9 +143,6 @@ async def communicator_drek(user_drek, origin_header):
     connected, _ = await comm.connect()
     if not connected:
         pytest.fail("WebsocketCommunicator failed to connect.")
-
-    # Ignore "group:connected" event.
-    await comm.receive_from()
 
     yield comm
     await comm.disconnect()

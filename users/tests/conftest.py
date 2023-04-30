@@ -1,5 +1,9 @@
 import pytest
+import pytest_asyncio
+from channels.testing import WebsocketCommunicator
+from rest_framework_simplejwt.tokens import RefreshToken
 
+from chatter.asgi import application
 from users.models import ChatterUser
 
 
@@ -12,9 +16,9 @@ def user_1():
         username="qwarkinator", email="qwark@example.com", password="fight_crime!12"
     )
     user1.friends.create(
-        username="drek_the_chairman",
-        email="drek@oxron.com",
-        password="you!&couldntTPossiBLYUNDER127Standxa",
+        username="praxis",
+        email="praxis@havencity.org",
+        password="giveUpyour13FreeDOM",
     )
     user1.friends.create(
         username="voxx",
@@ -50,3 +54,36 @@ def add_multiple_users():
     ChatterUser.objects.create(username="oasis", password="test")
     ChatterUser.objects.create(username="CrateOs", password="test")
     ChatterUser.objects.create(username="you_rePRETTYgood", password="mgs")
+
+
+@pytest.fixture
+def user_drek():
+    """
+    A user whose friends with no one.
+    """
+    user = ChatterUser.objects.create(
+        username="drekthechairman",
+        email="drek@orxon.com",
+        password="tryNottoLeaveanyMarks>:)",
+    )
+
+    return user
+
+
+@pytest_asyncio.fixture
+async def communicator_drek(user_drek):
+    """
+    A `WebsocketCommunicator` associated to `user_drek`.
+    """
+    jwt = RefreshToken.for_user(user_drek)
+    comm = WebsocketCommunicator(
+        application,
+        f"/ws/chat?token={jwt.access_token}",
+        headers=[(b"origin", b"http://localhost")],
+    )
+    connected, _ = await comm.connect()
+    if not connected:
+        pytest.fail("WebsocketCommunicator failed to connect.")
+
+    yield comm
+    await comm.disconnect()
