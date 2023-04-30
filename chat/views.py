@@ -4,16 +4,17 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ViewSet
 
 from chat import serializers
 from chat.models import ChatGroup, ChatMessage
 from chatter.utils import get_group_name
 
 
-class CreateChatGroup(APIView):
+class ChatGroupViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
+    def create(self, request):
         serializer = serializers.CreateChatGroupSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -23,11 +24,7 @@ class CreateChatGroup(APIView):
 
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-
-class ChatGroupDetail(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, pk=None):
+    def retrieve(self, request, pk=None):
         chat_group = get_object_or_404(ChatGroup.objects.all(), pk=pk)
 
         # Make sure the user is a member of the group, else they can ust fetch the

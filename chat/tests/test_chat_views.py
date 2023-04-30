@@ -8,15 +8,15 @@ from rest_framework import status
 from rest_framework.serializers import DateTimeField
 from rest_framework.test import force_authenticate
 
-from chat import views
 from chat.models import ChatGroup, ChatMessage
 from chat.utils import EventName
+from chat.views import ChatGroupViewSet, CreateChatMessage
 
 
 @pytest.mark.django_db
 def test_create_chat_group(user_1):
     factory = RequestFactory()
-    view = views.CreateChatGroup.as_view()
+    view = ChatGroupViewSet.as_view({"post": "create"})
     name = "Lo Wang Fan Club"
     request = factory.post("/api/chat/chatgroups/", {"owner": user_1.id, "name": name})
     force_authenticate(request, user=user_1)
@@ -40,7 +40,7 @@ def test_create_chat_group(user_1):
 @pytest.mark.django_db
 def test_chat_group_detail(user_1):
     factory = RequestFactory()
-    view = views.ChatGroupDetail.as_view()
+    view = ChatGroupViewSet.as_view({"get": "retrieve"})
     chat_group = ChatGroup.objects.get(name="Precursors rule")
 
     request = factory.get(f"/api/chat/chatgroups/{chat_group.pk}/")
@@ -78,7 +78,7 @@ def test_chat_group_detail(user_1):
 @pytest.mark.asyncio
 async def test_create_chat_message(user_1, communicator_drek):
     factory = RequestFactory()
-    view = views.CreateChatMessage.as_view()
+    view = CreateChatMessage.as_view()
     chat_group = await ChatGroup.objects.aget(name="Precursors rule")
     my_message = "Who were they again??"
 
