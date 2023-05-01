@@ -16,8 +16,7 @@ class ChatGroupViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request):
-        serializer = serializers.CreateChatGroupSerializer(data=request.data)
-
+        serializer = serializers.ChatGroupSerializer(data=request.data)
         if serializer.is_valid():
             chat_group = serializer.save()
             chat_group.members.add(request.user)
@@ -35,7 +34,12 @@ class ChatGroupViewSet(ViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         serializer = serializers.ChatGroupDetailSerializer(chat_group)
+        return Response(serializer.data)
 
+    def list(self, request):
+        user: ChatterUser = request.user
+        queryset = user.chat_groups.all()
+        serializer = serializers.ChatGroupListSerializer(queryset, many=True)
         return Response(serializer.data)
 
 

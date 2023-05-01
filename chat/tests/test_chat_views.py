@@ -74,6 +74,26 @@ def test_chat_group_detail(user_1):
         assert message["sent_on"] == model_sent_on
 
 
+@pytest.mark.django_db
+def test_chat_group_list(user_drek, user_1):
+    factory = RequestFactory()
+    view = ChatGroupViewSet.as_view({"get": "list"})
+
+    request = factory.get("/api/chat/chatgroups/")
+    force_authenticate(request, user=user_drek)
+    response = view(request)
+
+    assert response.status_code == status.HTTP_200_OK
+
+    response.render()
+    data = json.loads(response.content)
+    assert type(data) == list
+    assert len(data) == 1
+    assert data[0]["name"] == "Precursors rule"
+    assert data[0]["owner"]["id"] == user_1.id
+    assert data[0]["owner"]["username"] == user_1.username
+
+
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_create_chat_group_member(user_1, user_drek, communicator_drek):

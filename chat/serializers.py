@@ -5,10 +5,21 @@ from users.serializers import ChatterUserSerializer
 from .models import ChatGroup, ChatMessage
 
 
-class CreateChatGroupSerializer(serializers.ModelSerializer):
+class ChatGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatGroup
         fields = ["owner", "name"]
+
+
+class ChatGroupListSerializer(serializers.ModelSerializer):
+    """Serializes the output of `list()` in `chat.views.ChatGroupViewSet`."""
+
+    owner = ChatterUserSerializer()
+
+    class Meta:
+        model = ChatGroup
+        fields = ["owner", "name"]
+        read_only_fields = [*fields]
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
