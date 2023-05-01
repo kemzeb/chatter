@@ -20,7 +20,6 @@ class ChatConsumer(JsonWebsocketConsumer):
             return
 
         self.accept()
-        self.groups = []
 
         user_group_name = get_channel_group_name(user.username)
         self._group_add(user_group_name)
@@ -34,8 +33,12 @@ class ChatConsumer(JsonWebsocketConsumer):
         if user.is_anonymous:
             return
 
-        for group in self.groups:
-            async_to_sync(self.channel_layer.group_discard)(group, self.channel_name)
+        user_group_name = get_channel_group_name(user.username)
+        self._group_discard(user_group_name)
+
+        for chat_group in user.chat_groups.all():
+            group_name = get_group_name(chat_group.pk)
+            self._group_discard(group_name)
 
     def handle_create_message(self, event):
         self.send_event_to_client(EventName.GROUP_MESSAGE, event)
@@ -64,5 +67,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         self.send_event_to_client(EventName.ERROR_EVENT, err_type.value)
 
     def _group_add(self, group_name: str) -> None:
-        self.groups.append(group_name)
         async_to_sync(self.channel_layer.group_add)(group_name, self.channel_name)
+
+    def _group_discard(self, group_name: str) -> None:
+        async_to_sync(self.channel_layer.group_discard)(group_name, self.channel_name)
