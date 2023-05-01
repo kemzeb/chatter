@@ -2,32 +2,27 @@ import json
 
 import pytest
 from channels.db import database_sync_to_async
-from django.http import HttpResponse
-from django.test import RequestFactory
 from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.serializers import DateTimeField
-from rest_framework.test import force_authenticate
+from rest_framework.test import APIClient
 
 from chat.models import ChatGroup, ChatMessage
 from chat.utils import EventName
-from chat.views import ChatGroupMemberViewSet, ChatGroupViewSet, CreateChatMessage
 
 
 @pytest.mark.django_db
 def test_create_chat_group(user_1):
-    factory = RequestFactory()
-    view = ChatGroupViewSet.as_view({"post": "create"})
+    client = APIClient()
+    client.force_authenticate(user_1)
     name = "Lo Wang Fan Club"
-    request = factory.post("/api/chats/", {"owner": user_1.id, "name": name})
-    force_authenticate(request, user=user_1)
-    response = view(request)
-
+    response = client.post("/api/chats/", {"owner": user_1.id, "name": name})
+    assert isinstance(response, Response)
     assert response.status_code == status.HTTP_201_CREATED
 
     manager = ChatGroup.objects.filter(name=name)
     assert manager.exists()
     chat_group = manager[0]
-
     assert (
         chat_group.members.count() == 1
     ), "Owner should also be a member of their chat group."
@@ -39,19 +34,16 @@ def test_create_chat_group(user_1):
 
 @pytest.mark.django_db
 def test_chat_group_detail(user_1):
-    factory = RequestFactory()
-    view = ChatGroupViewSet.as_view({"get": "retrieve"})
+    client = APIClient()
+    client.force_authenticate(user_1)
+
     chat_group = ChatGroup.objects.get(name="Precursors rule")
-
-    request = factory.get(f"/api/chats/{chat_group.pk}/")
-    force_authenticate(request, user=user_1)
-    response = view(request, pk=chat_group.pk)
-
+    response = client.get(f"/api/chats/{chat_group.pk}/")
+    assert isinstance(response, Response)
     assert response.status_code == status.HTTP_200_OK
 
     response.render()
     data = json.loads(response.content)
-
     assert type(data) == dict
     assert "id" in data
     assert data["owner"]["id"] == user_1.id
@@ -76,13 +68,11 @@ def test_chat_group_detail(user_1):
 
 @pytest.mark.django_db
 def test_chat_group_list(user_drek, user_1):
-    factory = RequestFactory()
-    view = ChatGroupViewSet.as_view({"get": "list"})
+    client = APIClient()
+    client.force_authenticate(user_drek)
 
-    request = factory.get("/api/chats/")
-    force_authenticate(request, user=user_drek)
-    response = view(request)
-
+    response = client.get("/api/chats/")
+    assert isinstance(response, Response)
     assert response.status_code == status.HTTP_200_OK
 
     response.render()
@@ -97,19 +87,16 @@ def test_chat_group_list(user_drek, user_1):
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_create_chat_group_member(user_1, user_drek, communicator_drek):
-    factory = RequestFactory()
-    view = ChatGroupMemberViewSet.as_view({"post": "create"})
-    chat_group = await ChatGroup.objects.aget(owner=user_1, name="The Glory Of Panau")
+    client = APIClient()
+    client.force_authenticate(user_1)
 
-    request = factory.post(
-        f"/api/chats/{chat_group.pk}/members",
+    chat_group = await ChatGroup.objects.aget(owner=user_1, name="The Glory Of Panau")
+    response = await database_sync_to_async(client.post)(
+        f"/api/chats/{chat_group.pk}/members/",
         {"id": user_drek.id},
     )
-    force_authenticate(request, user=user_1)
-    response: HttpResponse = await database_sync_to_async(view)(
-        request, chat_id=chat_group.pk
-    )
-
+    assert isinstance(response, Response)
+    print(response.content)
     assert response.status_code == status.HTTP_201_CREATED
 
     ws_event = await communicator_drek.receive_json_from()
@@ -124,12 +111,12 @@ async def test_create_chat_group_member(user_1, user_drek, communicator_drek):
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_create_chat_message(user_1, communicator_drek):
-    factory = RequestFactory()
-    view = CreateChatMessage.as_view()
+    client = APIClient()
+    client.force_authenticate(user_1)
+
     chat_group = await ChatGroup.objects.aget(name="Precursors rule")
     my_message = "Who were they again??"
-
-    request = factory.post(
+    response = await database_sync_to_async(client.post)(
         "/api/chats/messages/",
         {
             "from_user": user_1.id,
@@ -137,8 +124,7 @@ async def test_create_chat_message(user_1, communicator_drek):
             "message": my_message,
         },
     )
-    force_authenticate(request, user=user_1)
-    response: HttpResponse = await database_sync_to_async(view)(request)
+    assert isinstance(response, Response)
     assert response.status_code == status.HTTP_201_CREATED
 
     ws_event = await communicator_drek.receive_json_from()

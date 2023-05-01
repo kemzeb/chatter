@@ -2,23 +2,18 @@ import json
 
 import pytest
 from channels.db import database_sync_to_async
-from django.http import HttpResponse
-from django.test import RequestFactory
 from rest_framework import status
-from rest_framework.test import force_authenticate
-
-from users import views
+from rest_framework.response import Response
+from rest_framework.test import APIClient
 
 
 @pytest.mark.django_db
 def test_friends_list_view(user_1):
-    factory = RequestFactory()
-    view = views.FriendsListView.as_view()
+    client = APIClient()
+    client.force_authenticate(user_1)
 
-    request = factory.get("/api/users/friends/")
-    force_authenticate(request, user=user_1)
-    response = view(request)
-
+    response = client.get("/api/users/friends/")
+    assert isinstance(response, Response)
     assert response.status_code == status.HTTP_200_OK
 
     response.render()
@@ -30,14 +25,13 @@ def test_friends_list_view(user_1):
 @pytest.mark.django_db
 @pytest.mark.usefixtures("add_multiple_users")
 def test_user_search_view(user_1):
-    factory = RequestFactory()
-    view = views.UserSearchView.as_view()
+    client = APIClient()
+    client.force_authenticate(user_1)
 
-    request = factory.get("/search/", {"q": "pa"})
-    force_authenticate(request, user=user_1)
-    response = view(request)
-
+    response = client.get("/search/", {"q": "pa"})
+    assert isinstance(response, Response)
     assert response.status_code == status.HTTP_200_OK
+
     response.render()
     data = json.loads(response.content)
     assert "results" in data
@@ -47,13 +41,13 @@ def test_user_search_view(user_1):
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_create_friend_request(user_1, user_drek, communicator_drek):
-    factory = RequestFactory()
-    view = views.FriendRequestView.as_view()
+    client = APIClient()
+    client.force_authenticate(user_1)
 
-    request = factory.post("/friendrequests/", {"addressee": user_drek.id})
-    force_authenticate(request, user=user_1)
-    response: HttpResponse = await database_sync_to_async(view)(request)
-
+    response = await database_sync_to_async(client.post)(
+        "/api/users/friendrequests/", {"addressee": user_drek.id}
+    )
+    assert isinstance(response, Response)
     assert response.status_code == status.HTTP_201_CREATED
 
     response.render()
