@@ -18,7 +18,7 @@ def test_create_chat_group(user_1):
     factory = RequestFactory()
     view = ChatGroupViewSet.as_view({"post": "create"})
     name = "Lo Wang Fan Club"
-    request = factory.post("/api/chat/chatgroups/", {"owner": user_1.id, "name": name})
+    request = factory.post("/api/chats/", {"owner": user_1.id, "name": name})
     force_authenticate(request, user=user_1)
     response = view(request)
 
@@ -43,7 +43,7 @@ def test_chat_group_detail(user_1):
     view = ChatGroupViewSet.as_view({"get": "retrieve"})
     chat_group = ChatGroup.objects.get(name="Precursors rule")
 
-    request = factory.get(f"/api/chat/chatgroups/{chat_group.pk}/")
+    request = factory.get(f"/api/chats/{chat_group.pk}/")
     force_authenticate(request, user=user_1)
     response = view(request, pk=chat_group.pk)
 
@@ -79,7 +79,7 @@ def test_chat_group_list(user_drek, user_1):
     factory = RequestFactory()
     view = ChatGroupViewSet.as_view({"get": "list"})
 
-    request = factory.get("/api/chat/chatgroups/")
+    request = factory.get("/api/chats/")
     force_authenticate(request, user=user_drek)
     response = view(request)
 
@@ -102,7 +102,7 @@ async def test_create_chat_group_member(user_1, user_drek, communicator_drek):
     chat_group = await ChatGroup.objects.aget(owner=user_1, name="The Glory Of Panau")
 
     request = factory.post(
-        f"/api/chat/chatgroups/{chat_group.pk}/members",
+        f"/api/chats/{chat_group.pk}/members",
         {"id": user_drek.id},
     )
     force_authenticate(request, user=user_1)
@@ -130,7 +130,7 @@ async def test_create_chat_message(user_1, communicator_drek):
     my_message = "Who were they again??"
 
     request = factory.post(
-        "/api/chat/messages/",
+        "/api/chats/messages/",
         {
             "from_user": user_1.id,
             "from_chat_group": chat_group.pk,

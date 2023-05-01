@@ -8,6 +8,8 @@ urlpatterns = [
 ]
 
 router = DefaultRouter()
-router.register(r"chatgroups", ChatGroupViewSet)
-router.register(r"chatgroups/(?P<chat_id>\d+)/members", ChatGroupMemberViewSet)
+router.register("", ChatGroupViewSet, basename="chats")
+router.register(
+    r"(?P<chat_id>\d+)/members", ChatGroupMemberViewSet, basename="chat_members"
+)
 urlpatterns += router.urls

@@ -22,5 +22,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("search/", UserSearchView.as_view()),
     path("api/users/", include("users.urls")),
+    path("api/chats/", include("chat.urls")),
     path("", include("frontend.urls")),
 ]
