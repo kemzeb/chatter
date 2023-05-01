@@ -10,7 +10,7 @@ from rest_framework.test import force_authenticate
 
 from chat.models import ChatGroup, ChatMessage
 from chat.utils import EventName
-from chat.views import ChatGroupViewSet, CreateChatMessage
+from chat.views import ChatGroupMemberViewSet, ChatGroupViewSet, CreateChatMessage
 
 
 @pytest.mark.django_db
@@ -72,6 +72,33 @@ def test_chat_group_detail(user_1):
         assert message["message"] == message_model.message
         model_sent_on = DateTimeField().to_representation(message_model.sent_on)
         assert message["sent_on"] == model_sent_on
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_create_chat_group_member(user_1, user_drek, communicator_drek):
+    factory = RequestFactory()
+    view = ChatGroupMemberViewSet.as_view({"post": "create"})
+    chat_group = await ChatGroup.objects.aget(owner=user_1, name="The Glory Of Panau")
+
+    request = factory.post(
+        f"/api/chat/chatgroups/{chat_group.pk}/members",
+        {"id": user_drek.id},
+    )
+    force_authenticate(request, user=user_1)
+    response: HttpResponse = await database_sync_to_async(view)(
+        request, chat_id=chat_group.pk
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+    ws_event = await communicator_drek.receive_json_from()
+    assert ws_event["event_type"] == str(EventName.GROUP_ADD)
+
+    msg = ws_event["message"]
+    assert msg["chat_group"] == chat_group.pk
+    assert msg["member"]["id"] == user_drek.id
+    assert msg["member"]["username"] == user_drek.username
 
 
 @pytest.mark.django_db(transaction=True)

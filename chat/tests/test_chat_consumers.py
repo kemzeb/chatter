@@ -1,5 +1,4 @@
 import pytest
-from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
 from channels.testing import WebsocketCommunicator
 
@@ -50,22 +49,3 @@ class TestChatConsumer:
         assert response["event_type"] == str(EventName.GROUP_MESSAGE)
 
         await communicator1_without_handling.disconnect()
-
-    async def test_group_add(self, communicator1, user_1, communicator2, user_2):
-        await database_sync_to_async(user_1.friends.add)(user_2)
-
-        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
-        await communicator1.send_json_to(
-            {
-                "event_type": str(EventName.GROUP_ADD),
-                "message": {"chat_group": chat_group.pk, "new_member": user_2.id},
-            }
-        )
-
-        response = await communicator1.receive_json_from()
-        assert "event_type" in response
-        assert response["event_type"] == str(EventName.GROUP_ADD)
-
-        response = await communicator2.receive_json_from()
-        assert "event_type" in response
-        assert response["event_type"] == str(EventName.GROUP_ADD)

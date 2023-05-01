@@ -8,7 +8,8 @@ from rest_framework.viewsets import ViewSet
 
 from chat import serializers
 from chat.models import ChatGroup, ChatMessage
-from chatter.utils import get_group_name
+from chatter.utils import get_channel_group_name, get_group_name
+from users.models import ChatterUser
 
 
 class ChatGroupViewSet(ViewSet):
@@ -38,6 +39,58 @@ class ChatGroupViewSet(ViewSet):
         return Response(serializer.data)
 
 
+class ChatGroupMemberViewSet(ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, chat_id=None):
+        serializer = serializers.ReadOnlyChatterUserSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        if not chat_id:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
+
+        new_member_id = serializer.data["id"]
+        new_member = get_object_or_404(ChatterUser.objects.all(), id=new_member_id)
+        user = request.user
+        has_friendship_with_user = new_member.friends.contains(user)
+        if not has_friendship_with_user:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        is_already_a_member = chat_group.members.contains(new_member)
+        if is_already_a_member:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        if chat_group.owner != user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        chat_group.members.add(new_member)
+
+        new_member_data = {
+            "chat_group": chat_group.pk,
+            "member": {"id": new_member.pk, "username": new_member.username},
+        }
+        new_member_serializer = serializers.CreateChatGroupMemberSerializer(
+            data=new_member_data
+        )
+        if not new_member_serializer.is_valid():
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            get_channel_group_name(new_member.username),
+            {"type": "handle_create_group_member", **new_member_serializer.data},
+        )
+        async_to_sync(channel_layer.group_send)(
+            get_group_name(chat_group.pk),
+            {"type": "handle_create_group_member", **new_member_serializer.data},
+        )
+
+        return Response(status=status.HTTP_201_CREATED, data=new_member_serializer.data)
+
+
 class CreateChatMessage(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -65,7 +118,7 @@ class CreateChatMessage(APIView):
         new_message_serializer = serializers.ChatMessageSerializer(message)
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            get_group_name(str(chat_group.pk)),
+            get_group_name(chat_group.pk),
             {"type": "handle_create_message", **new_message_serializer.data},
         )
 

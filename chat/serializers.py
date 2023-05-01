@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from users.models import FriendRequest
 from users.serializers import ChatterUserSerializer
 
 from .models import ChatGroup, ChatMessage
@@ -38,12 +37,16 @@ class CreateMessageSerializer(serializers.ModelSerializer):
         fields = ["from_chat_group", "message"]
 
 
-class FriendRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FriendRequest
-        fields = ["addressee"]
+# FIXME: There must be a better way to implement serializers then this.
+class ReadOnlyChatterUserSerializer(serializers.Serializer):
+    """
+    Exists only to validate input for `chat.views.ChatGroupMemberViewSet`'s `create()`.
+    """
+
+    id = serializers.IntegerField()
+    username = serializers.CharField(max_length=1800, required=False)
 
 
-class ChatGroupAddUserSerializer(serializers.Serializer):
-    chat_group = serializers.IntegerField(min_value=0)
-    new_member = serializers.IntegerField(min_value=0)
+class CreateChatGroupMemberSerializer(serializers.Serializer):
+    chat_group = serializers.IntegerField()
+    member = ReadOnlyChatterUserSerializer()
