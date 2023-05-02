@@ -12,7 +12,7 @@ def test_friends_list_view(user_1):
     client = APIClient()
     client.force_authenticate(user_1)
 
-    response = client.get("/api/users/friends/")
+    response = client.get("/api/users/me/friends/")
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_200_OK
 
@@ -45,7 +45,7 @@ async def test_create_friend_request(user_1, user_drek, communicator_drek):
     client.force_authenticate(user_1)
 
     response = await database_sync_to_async(client.post)(
-        "/api/users/friendrequests/", {"addressee": user_drek.id}
+        "/api/users/me/friendrequests/", {"addressee": user_drek.id}
     )
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_201_CREATED
