@@ -33,7 +33,7 @@ def test_create_chat_group(user_1):
 
 
 @pytest.mark.django_db
-def test_chat_group_detail(user_1):
+def test_retreive_chat_group(user_1):
     client = APIClient()
     client.force_authenticate(user_1)
 
@@ -67,7 +67,7 @@ def test_chat_group_detail(user_1):
 
 
 @pytest.mark.django_db
-def test_chat_group_list(user_drek, user_1):
+def test_list_chat_group(user_drek, user_1):
     client = APIClient()
     client.force_authenticate(user_drek)
 
@@ -82,6 +82,51 @@ def test_chat_group_list(user_drek, user_1):
     assert data[0]["name"] == "Precursors rule"
     assert data[0]["owner"]["id"] == user_1.id
     assert data[0]["owner"]["username"] == user_1.username
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_destroy_chat_group(user_1, communicator_drek):
+    client = APIClient()
+    client.force_authenticate(user_1)
+
+    chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+    response = await database_sync_to_async(client.delete)(
+        f"/api/chats/{chat_group.pk}/"
+    )
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    ws_event = await communicator_drek.receive_json_from()
+    assert ws_event["event_type"] == str(EventName.GROUP_DESTROY)
+    assert "id" in ws_event["message"]
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_destroy_non_existent_chat_group(user_1):
+    client = APIClient()
+    client.force_authenticate(user_1)
+
+    response = await database_sync_to_async(client.delete)("/api/chats/12345/")
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_destroy_chat_group_user_doesnt_own(user_1, user_drek):
+    client = APIClient()
+    client.force_authenticate(user_1)
+
+    dreks_chat_group = await ChatGroup.objects.acreate(
+        owner=user_drek, name="Long Live the Blarg"
+    )
+    response = await database_sync_to_async(client.delete)(
+        f"/api/chats/{dreks_chat_group.pk}/"
+    )
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.django_db(transaction=True)

@@ -37,10 +37,27 @@ class ChatGroupViewSet(ViewSet):
         return Response(serializer.data)
 
     def list(self, request):
-        user: ChatterUser = request.user
+        user = request.user
         queryset = user.chat_groups.all()
         serializer = serializers.ChatGroupListSerializer(queryset, many=True)
         return Response(serializer.data)
+
+    def destroy(self, request, pk=None):
+        chat_group = get_object_or_404(ChatGroup.objects.all(), pk=pk)
+        user = request.user
+
+        if user != chat_group.owner:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        chat_group.delete()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            get_group_name(pk),
+            {"type": "handle_destroy_chat_group", "id": pk},
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ChatGroupMemberViewSet(ViewSet):

@@ -40,6 +40,12 @@ class ChatConsumer(JsonWebsocketConsumer):
             group_name = get_group_name(chat_group.pk)
             self._group_discard(group_name)
 
+    def handle_destroy_chat_group(self, event):
+        chat_group_id = event["id"]
+        group_name = get_group_name(chat_group_id)
+        async_to_sync(self.channel_layer.group_discard)(group_name, self.channel_name)
+        self.send_event_to_client(EventName.GROUP_DESTROY, event)
+
     def handle_create_message(self, event):
         self.send_event_to_client(EventName.GROUP_MESSAGE, event)
 
@@ -54,7 +60,6 @@ class ChatConsumer(JsonWebsocketConsumer):
         if new_member_id == user_id:
             group_name = get_group_name(chat_group_id)
             self._group_add(group_name)
-
         self.send_event_to_client(EventName.GROUP_ADD, event)
 
     def send_event_to_client(self, event_type: EventName, message):

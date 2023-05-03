@@ -4,6 +4,7 @@ import enum
 class EventName(enum.StrEnum):
     GROUP_CONNECT = "group:connect"
     GROUP_CREATE = "group:create"
+    GROUP_DESTROY = "group:destroy"
     GROUP_FETCH = "group:fetch"
     GROUP_MESSAGE = "group:message"
     GROUP_ADD = "group:add"
