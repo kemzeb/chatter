@@ -60,10 +60,10 @@ def test_retreive_chat_group(user_1):
         assert manager.exists()
         message_model = manager[0]
         assert message["id"] == message_model.pk
-        assert message["from_user"] == user_1.id
+        assert message["user"] == user_1.id
         assert message["message"] == message_model.message
-        model_sent_on = DateTimeField().to_representation(message_model.sent_on)
-        assert message["sent_on"] == model_sent_on
+        created = DateTimeField().to_representation(message_model.created)
+        assert message["created"] == created
 
 
 @pytest.mark.django_db
@@ -164,8 +164,8 @@ async def test_create_chat_message(user_1, communicator_drek):
     response = await database_sync_to_async(client.post)(
         "/api/chats/messages/",
         {
-            "from_user": user_1.id,
-            "from_chat_group": chat_group.pk,
+            "user": user_1.id,
+            "chat_group": chat_group.pk,
             "message": my_message,
         },
     )
@@ -177,7 +177,7 @@ async def test_create_chat_message(user_1, communicator_drek):
 
     msg = ws_event["message"]
     assert type(msg) == dict
-    assert msg["from_user"] == user_1.id
-    assert msg["from_chat_group"] == chat_group.pk
+    assert msg["user"] == user_1.id
+    assert msg["chat_group"] == chat_group.pk
     assert msg["message"] == my_message
-    assert "sent_on" in msg
+    assert "created" in msg

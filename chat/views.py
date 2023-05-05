@@ -122,9 +122,7 @@ class CreateChatMessage(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.data
-        chat_group = get_object_or_404(
-            ChatGroup.objects.all(), pk=data["from_chat_group"]
-        )
+        chat_group = get_object_or_404(ChatGroup.objects.all(), pk=data["chat_group"])
 
         # Make sure the user is a member of the group, else they can send a message to
         # any chat group!
@@ -133,7 +131,7 @@ class CreateChatMessage(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         message = ChatMessage.objects.create(
-            from_user=request.user, from_chat_group=chat_group, message=data["message"]
+            user=request.user, chat_group=chat_group, message=data["message"]
         )
 
         new_message_serializer = serializers.ChatMessageSerializer(message)

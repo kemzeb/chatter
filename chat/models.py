@@ -12,22 +12,22 @@ class ChatGroup(models.Model):
         related_name="chat_groups",
     )
     name = models.CharField(max_length=64)
-    date_created = models.DateField(auto_now_add=True)
+    created = models.DateTimeField(default=now)
 
 
 class ChatGroupMembership(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     chat_group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE)
-    data_joined = models.DateField(auto_now_add=True)
+    joined = models.DateTimeField(default=now)
 
 
 class ChatMessage(models.Model):
-    from_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    from_chat_group = models.ForeignKey(
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    chat_group = models.ForeignKey(
         ChatGroup, on_delete=models.CASCADE, related_name="messages"
     )
     message = models.CharField(max_length=1800)
-    sent_on = models.DateTimeField(default=now)
+    created = models.DateTimeField(default=now)
 
 
 class ChatGroupInvite(models.Model):

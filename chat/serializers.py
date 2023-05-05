@@ -35,17 +35,17 @@ class ChatGroupDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatGroup
-        fields = ["id", "owner", "members", "messages", "date_created"]
+        fields = ["id", "owner", "members", "messages", "created"]
 
     def get_messages(self, obj):
-        messages = obj.messages.all().order_by("sent_on")
+        messages = obj.messages.all().order_by("created")
         return ChatMessageSerializer(messages, many=True).data
 
 
 class CreateMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
-        fields = ["from_chat_group", "message"]
+        fields = ["chat_group", "message"]
 
 
 # FIXME: There must be a better way to implement serializers then this.

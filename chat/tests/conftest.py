@@ -34,12 +34,10 @@ def user_1():
     group_1.members.add(user1)
     group_2.members.add(user1)
 
+    ChatMessage.objects.create(user=user1, chat_group=group_1, message="Qwarktastic!")
     ChatMessage.objects.create(
-        from_user=user1, from_chat_group=group_1, message="Qwarktastic!"
-    )
-    ChatMessage.objects.create(
-        from_user=user1,
-        from_chat_group=group_1,
+        user=user1,
+        chat_group=group_1,
         message="That poor plumber and his social economic disparity.",
     )
 
