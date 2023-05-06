@@ -62,6 +62,10 @@ class ChatConsumer(JsonWebsocketConsumer):
             self._group_add(group_name)
         self.send_event_to_client(EventName.GROUP_ADD, event)
 
+    def handle_destroy_group_member(self, event):
+        """Handles an event sent from `destroy()` in `ChatGroupMemberViewSet`."""
+        self.send_event_to_client(EventName.GROUP_REMOVE, event)
+
     def send_event_to_client(self, event_type: EventName, message):
         if "type" in message:
             del message["type"]

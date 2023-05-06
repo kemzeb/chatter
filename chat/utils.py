@@ -8,6 +8,7 @@ class EventName(enum.StrEnum):
     GROUP_FETCH = "group:fetch"
     GROUP_MESSAGE = "group:message"
     GROUP_ADD = "group:add"
+    GROUP_REMOVE = "group:remove"
     USER_FRIEND_REQUEST = "user:friendrequest"
     ERROR_EVENT = "error"
 

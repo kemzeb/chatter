@@ -48,16 +48,15 @@ class CreateMessageSerializer(serializers.ModelSerializer):
         fields = ["chat_group", "message"]
 
 
-# FIXME: There must be a better way to implement serializers then this.
 class ReadOnlyChatterUserSerializer(serializers.Serializer):
     """
-    Exists only to validate input for `chat.views.ChatGroupMemberViewSet`'s `create()`.
+    Exists only to validate input for `chat.views.ChatGroupMemberViewSet`.
     """
 
     id = serializers.IntegerField()
     username = serializers.CharField(max_length=1800, required=False)
 
 
-class CreateChatGroupMemberSerializer(serializers.Serializer):
+class ChatGroupMemberSerializer(serializers.Serializer):
     chat_group = serializers.IntegerField()
     member = ReadOnlyChatterUserSerializer()

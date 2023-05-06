@@ -141,11 +141,33 @@ async def test_create_chat_group_member(user_1, user_drek, communicator_drek):
         {"id": user_drek.id},
     )
     assert isinstance(response, Response)
-    print(response.content)
     assert response.status_code == status.HTTP_201_CREATED
 
     ws_event = await communicator_drek.receive_json_from()
     assert ws_event["event_type"] == str(EventName.GROUP_ADD)
+
+    msg = ws_event["message"]
+    assert msg["chat_group"] == chat_group.pk
+    assert msg["member"]["id"] == user_drek.id
+    assert msg["member"]["username"] == user_drek.username
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_destroy_chat_group_member(user_1, user_drek, communicator_drek):
+    client = APIClient()
+    client.force_authenticate(user_1)
+
+    chat_group = await ChatGroup.objects.aget(owner=user_1, name="Precursors rule")
+    response = await database_sync_to_async(client.delete)(
+        f"/api/chats/{chat_group.pk}/members/{user_drek.id}/",
+    )
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert await chat_group.members.acount() == 1
+
+    ws_event = await communicator_drek.receive_json_from()
+    assert ws_event["event_type"] == str(EventName.GROUP_REMOVE)
 
     msg = ws_event["message"]
     assert msg["chat_group"] == chat_group.pk

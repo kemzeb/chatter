@@ -93,7 +93,7 @@ class ChatGroupMemberViewSet(ViewSet):
             "chat_group": chat_group.pk,
             "member": {"id": new_member.pk, "username": new_member.username},
         }
-        new_member_serializer = serializers.CreateChatGroupMemberSerializer(
+        new_member_serializer = serializers.ChatGroupMemberSerializer(
             data=new_member_data
         )
         if not new_member_serializer.is_valid():
@@ -110,6 +110,39 @@ class ChatGroupMemberViewSet(ViewSet):
         )
 
         return Response(status=status.HTTP_201_CREATED, data=new_member_serializer.data)
+
+    def destroy(self, request, chat_id=None, pk=None):
+        if chat_id is None or pk is None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
+        user = request.user
+        if user != chat_group.owner:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        member = get_object_or_404(ChatterUser.objects.all(), id=pk)
+        if not chat_group.members.contains(member):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        chat_group.members.remove(member)
+
+        new_member_data = {
+            "chat_group": chat_group.pk,
+            "member": {"id": member.pk, "username": member.username},
+        }
+        new_member_serializer = serializers.ChatGroupMemberSerializer(
+            data=new_member_data
+        )
+        if not new_member_serializer.is_valid():
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            get_group_name(chat_group.pk),
+            {"type": "handle_destroy_group_member", **new_member_serializer.data},
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CreateChatMessage(APIView):
