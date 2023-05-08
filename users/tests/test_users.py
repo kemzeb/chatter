@@ -6,6 +6,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
+from users.models import FriendRequest
+
 
 @pytest.mark.django_db
 def test_friends_list_view(user_1):
@@ -60,3 +62,22 @@ async def test_create_friend_request(user_1, user_drek, communicator_drek):
     assert msg["requester"] == user_1.id
     assert msg["addressee"] == user_drek.id
     assert "id" in msg
+
+
+@pytest.mark.django_db
+def test_list_friend_request(user_1, user_drek):
+    client = APIClient()
+    client.force_authenticate(user_1)
+
+    FriendRequest.objects.create(requester=user_drek, addressee=user_1)
+
+    response = client.get("/api/users/me/friendrequests/")
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_200_OK
+
+    response.render()
+    data = json.loads(response.content)
+    assert type(data) == list
+    assert len(data) == 1
+    assert data[0]["requester"] == user_drek.id
+    assert data[0]["addressee"] == user_1.id

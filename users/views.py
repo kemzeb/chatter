@@ -5,6 +5,7 @@ from rest_framework import permissions, status
 from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ViewSet
 
 from chatter.utils import get_channel_group_name
 from users import serializers
@@ -42,10 +43,10 @@ class UserSearchView(ListAPIView):
         return queryset
 
 
-class FriendRequestView(APIView):
+class FriendRequestViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
+    def create(self, request):
         serializer = serializers.CreateFriendRequestSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -62,14 +63,14 @@ class FriendRequestView(APIView):
 
         addressee = user_manger[0]
 
-        has_addressee_sent_friend_request = FriendRequest.objects.filter(
+        addressee_has_sent_friend_request = FriendRequest.objects.filter(
             requester=addressee, addressee=user
         ).exists()
-        if has_addressee_sent_friend_request:
+        if addressee_has_sent_friend_request:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        is_user_and_addressee_already_friends = user.friends.contains(addressee)
-        if is_user_and_addressee_already_friends:
+        user_and_addressee_are_already_friends = user.friends.contains(addressee)
+        if user_and_addressee_are_already_friends:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -89,3 +90,11 @@ class FriendRequestView(APIView):
             return Response(
                 status=status.HTTP_201_CREATED, data={"id": friend_request.pk}
             )
+
+    def list(self, request):
+        user = request.user
+        serializer = serializers.FriendRequestSerializer(
+            user.pending_requests.all(), many=True
+        )
+
+        return Response(serializer.data)
