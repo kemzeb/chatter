@@ -59,9 +59,11 @@ async def test_create_friend_request(user_1, user_drek, communicator_drek):
     ws_event = await communicator_drek.receive_json_from()
     assert ws_event["event_type"] == "user:friendrequest"
     msg = ws_event["message"]
-    assert msg["requester"] == user_1.id
-    assert msg["addressee"] == user_drek.id
     assert "id" in msg
+    assert msg["requester"]["id"] == user_1.id
+    assert msg["requester"]["username"] == user_1.username
+    assert msg["addressee"]["id"] == user_drek.id
+    assert msg["addressee"]["username"] == user_drek.username
 
 
 @pytest.mark.django_db
@@ -79,5 +81,6 @@ def test_list_friend_request(user_1, user_drek):
     data = json.loads(response.content)
     assert type(data) == list
     assert len(data) == 1
-    assert data[0]["requester"] == user_drek.id
-    assert data[0]["addressee"] == user_1.id
+    assert "id" in data[0]
+    assert data[0]["requester"]["id"] == user_drek.id
+    assert data[0]["requester"]["username"] == user_drek.username

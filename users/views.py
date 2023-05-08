@@ -93,7 +93,7 @@ class FriendRequestViewSet(ViewSet):
 
     def list(self, request):
         user = request.user
-        serializer = serializers.FriendRequestSerializer(
+        serializer = serializers.ListFriendRequestSerializer(
             user.pending_requests.all(), many=True
         )
 

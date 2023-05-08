@@ -35,15 +35,39 @@ class ChatterUserSerializer(ModelSerializer):
         fields = ["id", "username"]
 
 
+class FriendRequestSerializer(ModelSerializer):
+    """
+    Exists only for serializing `FriendRequest` objects.
+    """
+
+    requester = ChatterUserSerializer()
+    addressee = ChatterUserSerializer()
+
+    class Meta:
+        model = models.FriendRequest
+        fields = ["id", "requester", "addressee"]
+        read_only_fields = [*fields]
+
+
 class CreateFriendRequestSerializer(ModelSerializer):
-    """Exists only to validate input for `users.views.CreateFriendRequestView`."""
+    """
+    Exists only for validating user input for `create()` in
+    `users.views.FriendRequestViewSet`.
+    """
 
     class Meta:
         model = models.FriendRequest
         fields = ["addressee"]
 
 
-class FriendRequestSerializer(ModelSerializer):
+class ListFriendRequestSerializer(ModelSerializer):
+    """
+    Exists only for `FriendRequest` serialization in `list()` within
+    `users.views.FriendRequestViewSet`.
+    """
+
+    requester = ChatterUserSerializer()
+
     class Meta:
         model = models.FriendRequest
-        fields = "__all__"
+        fields = ["id", "requester"]
