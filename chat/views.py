@@ -3,7 +3,6 @@ from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from chat import serializers
@@ -145,10 +144,10 @@ class ChatGroupMemberViewSet(ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CreateChatMessage(APIView):
+class ChatMessageViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
+    def create(self, request):
         serializer = serializers.CreateMessageSerializer(data=request.data)
 
         if not serializer.is_valid():
