@@ -184,10 +184,8 @@ async def test_create_chat_message(user_1, communicator_drek):
     chat_group = await ChatGroup.objects.aget(name="Precursors rule")
     my_message = "Who were they again??"
     response = await database_sync_to_async(client.post)(
-        "/api/chats/messages/",
+        f"/api/chats/{chat_group.pk}/messages/",
         {
-            "user": user_1.id,
-            "chat_group": chat_group.pk,
             "message": my_message,
         },
     )

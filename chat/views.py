@@ -147,14 +147,14 @@ class ChatGroupMemberViewSet(ViewSet):
 class ChatMessageViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request):
+    def create(self, request, chat_id=None):
         serializer = serializers.CreateMessageSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.data
-        chat_group = get_object_or_404(ChatGroup.objects.all(), pk=data["chat_group"])
+        chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
 
         # Make sure the user is a member of the group, else they can send a message to
         # any chat group!

@@ -6,7 +6,9 @@ router = DefaultRouter()
 router.register(
     r"(?P<chat_id>\d+)/members", ChatGroupMemberViewSet, basename="chat_member"
 )
-router.register(r"messages", ChatMessageViewSet, basename="chat_message")
+router.register(
+    r"(?P<chat_id>\d+)/messages", ChatMessageViewSet, basename="chat_message"
+)
 router.register(r"", ChatGroupViewSet, basename="chat")
 
 urlpatterns = router.urls

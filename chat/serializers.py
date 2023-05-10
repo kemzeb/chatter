@@ -22,12 +22,6 @@ class ChatGroupListSerializer(serializers.ModelSerializer):
         read_only_fields = [*fields]
 
 
-class ChatMessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ChatMessage
-        fields = "__all__"
-
-
 class ChatGroupDetailSerializer(serializers.ModelSerializer):
     owner = ChatterUserSerializer(read_only=True)
     members = ChatterUserSerializer(many=True, read_only=True)
@@ -42,15 +36,25 @@ class ChatGroupDetailSerializer(serializers.ModelSerializer):
         return ChatMessageSerializer(messages, many=True).data
 
 
-class CreateMessageSerializer(serializers.ModelSerializer):
+class ChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
-        fields = ["chat_group", "message"]
+        fields = "__all__"
+
+
+class CreateMessageSerializer(serializers.ModelSerializer):
+    """
+    Validates input for `create()` within `chat.views.ChatMessageViewSet`.
+    """
+
+    class Meta:
+        model = ChatMessage
+        fields = ["message"]
 
 
 class ReadOnlyChatterUserSerializer(serializers.Serializer):
     """
-    Exists only to validate input for `chat.views.ChatGroupMemberViewSet`.
+    Validates input for `chat.views.ChatGroupMemberViewSet`.
     """
 
     id = serializers.IntegerField()
