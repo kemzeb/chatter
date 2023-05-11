@@ -3,9 +3,8 @@ from channels.layers import get_channel_layer
 from channels.testing import WebsocketCommunicator
 
 from chat.models import ChatGroup
-from chat.utils import EventName
 from chatter.asgi import application
-from chatter.utils import get_group_name
+from chatter.utils import EventName, get_group_name
 
 
 @pytest.mark.django_db(transaction=True)

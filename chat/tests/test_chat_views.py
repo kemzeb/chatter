@@ -8,7 +8,7 @@ from rest_framework.serializers import DateTimeField
 from rest_framework.test import APIClient
 
 from chat.models import ChatGroup, ChatMessage
-from chat.utils import EventName
+from chatter.utils import EventName
 
 
 @pytest.mark.django_db

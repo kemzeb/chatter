@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
+from chatter.utils import EventName
 from users.models import FriendRequest
 
 
@@ -57,7 +58,7 @@ async def test_create_friend_request(user_1, user_drek, communicator_drek):
     assert "id" in data
 
     ws_event = await communicator_drek.receive_json_from()
-    assert ws_event["event_type"] == "user:friendrequest"
+    assert ws_event["event_type"] == str(EventName.USER_FRIEND_REQUEST)
     msg = ws_event["message"]
     assert "id" in msg
     assert msg["requester"]["id"] == user_1.id
@@ -87,7 +88,7 @@ async def test_accept_friend_request(
     assert await user_drek.friends.acontains(user_1)
 
     user_drek_ws_event = await communicator_drek.receive_json_from()
-    assert user_drek_ws_event["event_type"] == "user:accept"
+    assert user_drek_ws_event["event_type"] == str(EventName.USER_ACCEPT_FRIEND_REQUEST)
     msg = user_drek_ws_event["message"]
     assert msg["requester"]["id"] == user_drek.id
     assert msg["requester"]["username"] == user_drek.username
@@ -95,7 +96,7 @@ async def test_accept_friend_request(
     assert msg["addressee"]["username"] == user_1.username
 
     user_1_ws_event = await communicator_1.receive_json_from()
-    assert user_1_ws_event["event_type"] == "user:accept"
+    assert user_1_ws_event["event_type"] == str(EventName.USER_ACCEPT_FRIEND_REQUEST)
     msg = user_1_ws_event["message"]
     assert msg["requester"]["id"] == user_drek.id
     assert msg["requester"]["username"] == user_drek.username

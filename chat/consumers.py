@@ -1,9 +1,7 @@
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
 
-from chatter.utils import get_channel_group_name, get_group_name
-
-from .utils import EventErrCode, EventName
+from chatter.utils import EventName, get_channel_group_name, get_group_name
 
 
 class ChatConsumer(JsonWebsocketConsumer):
@@ -74,9 +72,6 @@ class ChatConsumer(JsonWebsocketConsumer):
             del message["type"]
 
         self.send_json({"event_type": event_type.value, "message": message})
-
-    def send_err_event_to_client(self, err_type: EventErrCode):
-        self.send_event_to_client(EventName.ERROR_EVENT, err_type.value)
 
     def _group_add(self, group_name: str) -> None:
         async_to_sync(self.channel_layer.group_add)(group_name, self.channel_name)
