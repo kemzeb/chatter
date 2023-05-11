@@ -97,8 +97,6 @@ async def communicator1(communicator1_without_handling):
     """
     Provides a `WebsocketCommunicator` that handles triggering connection and
     disconnection. This uses the `user_1` fixture, hence the "1" in the fixture name.
-
-    It also ignores the `group:connected` event sent after connection is established.
     """
     connected, _ = await communicator1_without_handling.connect()
     if not connected:

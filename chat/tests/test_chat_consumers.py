@@ -7,9 +7,6 @@ from chat.utils import EventName
 from chatter.asgi import application
 from chatter.utils import get_group_name
 
-# FIXME: These tests need to be much more robust. There are edge cases that are not
-# being handled and assertions that don't exist yet but we should be making.
-
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
