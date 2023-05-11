@@ -1,5 +1,3 @@
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -7,7 +5,7 @@ from rest_framework.viewsets import ViewSet
 
 from chat import serializers
 from chat.models import ChatGroup, ChatMessage
-from chatter.utils import get_channel_group_name, get_group_name
+from chatter.utils import publish_to_group, publish_to_user
 from users.models import ChatterUser
 
 
@@ -50,11 +48,7 @@ class ChatGroupViewSet(ViewSet):
 
         chat_group.delete()
 
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            get_group_name(pk),
-            {"type": "handle_destroy_chat_group", "id": pk},
-        )
+        publish_to_group(pk, {"id": pk}, "handle_destroy_chat_group")
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -98,14 +92,13 @@ class ChatGroupMemberViewSet(ViewSet):
         if not new_member_serializer.is_valid():
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            get_channel_group_name(new_member.username),
-            {"type": "handle_create_group_member", **new_member_serializer.data},
+        publish_to_user(
+            new_member,
+            new_member_serializer.data,
+            "handle_create_group_member",
         )
-        async_to_sync(channel_layer.group_send)(
-            get_group_name(chat_group.pk),
-            {"type": "handle_create_group_member", **new_member_serializer.data},
+        publish_to_group(
+            chat_group, new_member_serializer.data, "handle_create_group_member"
         )
 
         return Response(status=status.HTTP_201_CREATED, data=new_member_serializer.data)
@@ -125,20 +118,18 @@ class ChatGroupMemberViewSet(ViewSet):
 
         chat_group.members.remove(member)
 
-        new_member_data = {
+        deleted_member_data = {
             "chat_group": chat_group.pk,
             "member": {"id": member.pk, "username": member.username},
         }
-        new_member_serializer = serializers.ChatGroupMemberSerializer(
-            data=new_member_data
+        deleted_member_serializer = serializers.ChatGroupMemberSerializer(
+            data=deleted_member_data
         )
-        if not new_member_serializer.is_valid():
+        if not deleted_member_serializer.is_valid():
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            get_group_name(chat_group.pk),
-            {"type": "handle_destroy_group_member", **new_member_serializer.data},
+        publish_to_group(
+            chat_group, deleted_member_serializer.data, "handle_destroy_group_member"
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -167,10 +158,8 @@ class ChatMessageViewSet(ViewSet):
         )
 
         new_message_serializer = serializers.ChatMessageSerializer(message)
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            get_group_name(chat_group.pk),
-            {"type": "handle_create_message", **new_message_serializer.data},
+        publish_to_group(
+            chat_group, new_message_serializer.data, "handle_create_message"
         )
 
         return Response(status=status.HTTP_201_CREATED, data={"id": message.pk})

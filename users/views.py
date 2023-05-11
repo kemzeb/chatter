@@ -1,5 +1,3 @@
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
@@ -8,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
-from chatter.utils import get_channel_group_name
+from chatter.utils import publish_to_user
 from users import serializers
 from users.models import ChatterUser, FriendRequest
 from users.paginations import UserSearchPagination
@@ -82,11 +80,7 @@ class FriendRequestViewSet(ViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = serializers.FriendRequestSerializer(friend_request)
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                get_channel_group_name(addressee),
-                {"type": "handle_create_friend_request", **serializer.data},
-            )
+            publish_to_user(addressee, serializer.data, "handle_create_friend_request")
 
             return Response(
                 status=status.HTTP_201_CREATED, data={"id": friend_request.pk}
@@ -113,7 +107,6 @@ class FriendRequestViewSet(ViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         serializer = serializers.DestroyFriendRequestSerializer(friend_request)
-        data = serializer.data
 
         requester = friend_request.requester
         friend_request.delete()
@@ -121,15 +114,8 @@ class FriendRequestViewSet(ViewSet):
             requester.friends.add(user)
         # FIXME: Implement denying a friend request.
 
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            get_channel_group_name(requester),
-            {"type": "handle_accept_friend_request", **data},
-        )
-        async_to_sync(channel_layer.group_send)(
-            get_channel_group_name(user),
-            {"type": "handle_accept_friend_request", **data},
-        )
+        publish_to_user(requester, serializer.data, "handle_accept_friend_request")
+        publish_to_user(user, serializer.data, "handle_accept_friend_request")
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
