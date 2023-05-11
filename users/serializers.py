@@ -51,13 +51,27 @@ class FriendRequestSerializer(ModelSerializer):
 
 class CreateFriendRequestSerializer(ModelSerializer):
     """
-    Exists only for validating user input for `create()` in
-    `users.views.FriendRequestViewSet`.
+    Validates user input for `create()` within `users.views.FriendRequestViewSet`.
     """
 
     class Meta:
         model = models.FriendRequest
         fields = ["addressee"]
+
+
+class DestroyFriendRequestSerializer(ModelSerializer):
+    """
+    Used for serialization for `destroy()` within `users.views.FriendRequestViewSet`.
+    """
+
+    requester = ChatterUserSerializer()
+    addressee = ChatterUserSerializer()
+
+    class Meta:
+        model = models.FriendRequest
+        fields = ["requester", "addressee"]
+        read_only_fields = ["requester", "addressee"]
+        write_only_fields = ["id"]
 
 
 class ListFriendRequestSerializer(ModelSerializer):

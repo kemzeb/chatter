@@ -1,6 +1,7 @@
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.response import Response
@@ -90,6 +91,47 @@ class FriendRequestViewSet(ViewSet):
             return Response(
                 status=status.HTTP_201_CREATED, data={"id": friend_request.pk}
             )
+
+    def destroy(self, request, pk=None):
+        """Accepts a friend request. It will delete the friend request entry, make the
+        auth user and requester friends, and publish a WebSocket event to the
+        requester and auth user (the addressee).
+
+        This event will contain both the addressee's and requester's user info (by
+        using `ChatterUserSerializer`).
+        """
+        # FIXME: Find a better way to validate query params.
+        accept = request.query_params.get("accept")
+        if accept is None:
+            accept = "0"
+
+        friend_request = get_object_or_404(
+            FriendRequest.objects.select_related("requester", "addressee"), pk=pk
+        )
+        user = request.user
+        if friend_request.addressee != user:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = serializers.DestroyFriendRequestSerializer(friend_request)
+        data = serializer.data
+
+        requester = friend_request.requester
+        friend_request.delete()
+        if accept == "1":
+            requester.friends.add(user)
+        # FIXME: Implement denying a friend request.
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            get_channel_group_name(requester),
+            {"type": "handle_accept_friend_request", **data},
+        )
+        async_to_sync(channel_layer.group_send)(
+            get_channel_group_name(user),
+            {"type": "handle_accept_friend_request", **data},
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def list(self, request):
         user = request.user

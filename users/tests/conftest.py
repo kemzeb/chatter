@@ -35,6 +35,27 @@ def user_1():
     return user1
 
 
+@pytest_asyncio.fixture
+async def communicator_1(user_1):
+    """
+    Provides a `WebsocketCommunicator` that handles triggering connection and
+    disconnection. This uses the `user_1` fixture, hence the "1" in the fixture name.
+
+    """
+    jwt = RefreshToken.for_user(user_1)
+    comm = WebsocketCommunicator(
+        application,
+        f"/ws/chat?token={jwt.access_token}",
+        headers=[(b"origin", b"http://localhost")],
+    )
+    connected, _ = await comm.connect()
+    if not connected:
+        pytest.fail("WebsocketCommunicator failed to connect.")
+
+    yield comm
+    await comm.disconnect()
+
+
 @pytest.fixture
 def add_multiple_users():
     ChatterUser.objects.create(username="luikangpang", password="clonewars")
