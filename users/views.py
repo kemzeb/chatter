@@ -87,17 +87,18 @@ class FriendRequestViewSet(ViewSet):
             )
 
     def destroy(self, request, pk=None):
-        """Accepts a friend request. It will delete the friend request entry, make the
-        auth user and requester friends, and publish a WebSocket event to the
-        requester and auth user (the addressee).
+        """Accepts a friend request. If it gets query parameter `?accept=1`, it will
+        delete the friend request entry, make the auth user and requester friends, and
+        publish a WebSocket event to the requester and auth user (the addressee).
+        Otherwise if it equals '0', it will do everything mentioned above but won't make
+        the 2 users friends.
 
         This event will contain both the addressee's and requester's user info (by
         using `ChatterUserSerializer`).
         """
-        # FIXME: Find a better way to validate query params.
         accept = request.query_params.get("accept")
-        if accept is None:
-            accept = "0"
+        if accept not in ("0", "1"):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         friend_request = get_object_or_404(
             FriendRequest.objects.select_related("requester", "addressee"), pk=pk
@@ -106,16 +107,18 @@ class FriendRequestViewSet(ViewSet):
         if friend_request.addressee != user:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = serializers.DestroyFriendRequestSerializer(friend_request)
-
         requester = friend_request.requester
         friend_request.delete()
+
+        handler = "handle_accept_friend_request"
         if accept == "1":
             requester.friends.add(user)
-        # FIXME: Implement denying a friend request.
+        else:
+            handler = "handle_reject_friend_request"
 
-        publish_to_user(requester, serializer.data, "handle_accept_friend_request")
-        publish_to_user(user, serializer.data, "handle_accept_friend_request")
+        serializer = serializers.DestroyFriendRequestSerializer(friend_request)
+        publish_to_user(requester, serializer.data, handler)
+        publish_to_user(user, serializer.data, handler)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

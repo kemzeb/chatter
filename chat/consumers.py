@@ -53,6 +53,9 @@ class ChatConsumer(JsonWebsocketConsumer):
     def handle_accept_friend_request(self, event):
         self.send_event_to_client(EventName.USER_ACCEPT_FRIEND_REQUEST, event)
 
+    def handle_reject_friend_request(self, event):
+        self.send_event_to_client(EventName.USER_REJECT_FRIEND_REQUEST, event)
+
     def handle_create_group_member(self, event):
         """Handles an event sent from `create()` in `ChatGroupMemberViewSet`."""
         chat_group_id = event["chat_group"]
