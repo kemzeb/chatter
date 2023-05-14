@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
-from chatter.utils import publish_to_user
+from chatter.utils import LOOKUP_REGEX, publish_to_user
 from users import serializers
 from users.models import ChatterUser, FriendRequest
 from users.paginations import UserSearchPagination
@@ -44,6 +44,7 @@ class UserSearchView(ListAPIView):
 
 class FriendRequestViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    lookup_value_regex = LOOKUP_REGEX
 
     def create(self, request):
         serializer = serializers.CreateFriendRequestSerializer(data=request.data)

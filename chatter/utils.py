@@ -71,3 +71,8 @@ class EventName(enum.StrEnum):
 
     def __str__(self) -> str:
         return self.value
+
+
+LOOKUP_REGEX = r"[0-9]+"
+"""Used to set the `lookup_value_regex` class variable of `ViewSet` classes to a more
+restrictive pattern."""

@@ -5,12 +5,13 @@ from rest_framework.viewsets import ViewSet
 
 from chat import serializers
 from chat.models import ChatGroup, ChatMessage
-from chatter.utils import publish_to_group, publish_to_user
+from chatter.utils import LOOKUP_REGEX, publish_to_group, publish_to_user
 from users.models import ChatterUser
 
 
 class ChatGroupViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    lookup_value_regex = LOOKUP_REGEX
 
     def create(self, request):
         serializer = serializers.ChatGroupSerializer(data=request.data)
@@ -55,6 +56,7 @@ class ChatGroupViewSet(ViewSet):
 
 class ChatGroupMemberViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    lookup_value_regex = LOOKUP_REGEX
 
     def create(self, request, chat_id=None):
         serializer = serializers.ReadOnlyChatterUserSerializer(data=request.data)
@@ -137,6 +139,7 @@ class ChatGroupMemberViewSet(ViewSet):
 
 class ChatMessageViewSet(ViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    lookup_value_regex = LOOKUP_REGEX
 
     def create(self, request, chat_id=None):
         serializer = serializers.CreateMessageSerializer(data=request.data)
