@@ -3,7 +3,6 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from chatter.utils import LOOKUP_REGEX, publish_to_user
@@ -18,16 +17,6 @@ class RegisterView(CreateAPIView):
     serializer_class = serializers.RegisterSerializer
 
 
-class FriendsListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        serializer = serializers.ChatterUserSerializer(user.friends.all(), many=True)
-
-        return Response(serializer.data)
-
-
 class UserSearchView(ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = serializers.ChatterUserSerializer
@@ -40,6 +29,31 @@ class UserSearchView(ListAPIView):
             id=self.request.user.pk
         )
         return queryset
+
+
+class FriendsViewSet(ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_value_regex = LOOKUP_REGEX
+
+    def destroy(self, request, pk=None):
+        friend = get_object_or_404(ChatterUser, pk=pk)
+        user = request.user
+
+        if not user.friends.contains(friend):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        user.friends.remove(friend)
+
+        user_serializer = serializers.ChatterUserSerializer(user)
+        publish_to_user(friend, user_serializer.data, "handle_delete_friend")
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def list(self, request):
+        user = request.user
+        serializer = serializers.ChatterUserSerializer(user.friends.all(), many=True)
+
+        return Response(serializer.data)
 
 
 class FriendRequestViewSet(ViewSet):
@@ -57,11 +71,11 @@ class FriendRequestViewSet(ViewSet):
         if user.id == addressee_id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        user_manger = ChatterUser.objects.filter(id=addressee_id)
-        if not user_manger.exists():
+        user_manager = ChatterUser.objects.filter(id=addressee_id)
+        if not user_manager.exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        addressee = user_manger[0]
+        addressee = user_manager[0]
 
         addressee_has_sent_friend_request = FriendRequest.objects.filter(
             requester=addressee, addressee=user

@@ -68,6 +68,7 @@ class EventName(enum.StrEnum):
     USER_FRIEND_REQUEST = "user:friendrequest"
     USER_ACCEPT_FRIEND_REQUEST = "user:accept"
     USER_REJECT_FRIEND_REQUEST = "user:reject"
+    USER_UNFRIEND = "user:unfriend"
 
     def __str__(self) -> str:
         return self.value

@@ -11,21 +11,6 @@ from users.models import FriendRequest
 
 
 @pytest.mark.django_db
-def test_friends_list_view(user_1):
-    client = APIClient()
-    client.force_authenticate(user_1)
-
-    response = client.get("/api/users/me/friends/")
-    assert isinstance(response, Response)
-    assert response.status_code == status.HTTP_200_OK
-
-    response.render()
-    data = json.loads(response.content)
-    assert type(data) == list
-    assert len(data) == 2
-
-
-@pytest.mark.django_db
 @pytest.mark.usefixtures("add_multiple_users")
 def test_user_search_view(user_1):
     client = APIClient()
@@ -39,6 +24,43 @@ def test_user_search_view(user_1):
     data = json.loads(response.content)
     assert "results" in data
     assert len(data["results"]) == 8
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_delete_friend_view(user_1, user_drek, communicator_1, communicator_drek):
+    client = APIClient()
+    client.force_authenticate(user_1)
+
+    await user_1.friends.aadd(user_drek)
+
+    response = await database_sync_to_async(client.delete)(
+        f"/api/users/me/friends/{user_drek.id}/"
+    )
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert await user_1.friends.acount() == 2
+
+    ws_event = await communicator_drek.receive_json_from()
+    assert ws_event["event_type"] == str(EventName.USER_UNFRIEND)
+    msg = ws_event["message"]
+    assert msg["id"] == user_1.id
+    assert msg["username"] == user_1.username
+
+
+@pytest.mark.django_db
+def test_list_friends_view(user_1):
+    client = APIClient()
+    client.force_authenticate(user_1)
+
+    response = client.get("/api/users/me/friends/")
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_200_OK
+
+    response.render()
+    data = json.loads(response.content)
+    assert type(data) == list
+    assert len(data) == 2
 
 
 @pytest.mark.django_db(transaction=True)
