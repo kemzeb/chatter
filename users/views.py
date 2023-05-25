@@ -45,6 +45,8 @@ class FriendsViewSet(ViewSet):
         user.friends.remove(friend)
 
         user_serializer = serializers.ChatterUserSerializer(user)
+        friend_serializer = serializers.ChatterUserSerializer(friend)
+        publish_to_user(user, friend_serializer.data, "handle_delete_friend")
         publish_to_user(friend, user_serializer.data, "handle_delete_friend")
 
         return Response(status=status.HTTP_204_NO_CONTENT)

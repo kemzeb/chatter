@@ -41,6 +41,12 @@ async def test_delete_friend_view(user_1, user_drek, communicator_1, communicato
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert await user_1.friends.acount() == 2
 
+    ws_event = await communicator_1.receive_json_from()
+    assert ws_event["event_type"] == str(EventName.USER_UNFRIEND)
+    msg = ws_event["message"]
+    assert msg["id"] == user_drek.id
+    assert msg["username"] == user_drek.username
+
     ws_event = await communicator_drek.receive_json_from()
     assert ws_event["event_type"] == str(EventName.USER_UNFRIEND)
     msg = ws_event["message"]
