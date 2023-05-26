@@ -52,6 +52,16 @@ class CreateMessageSerializer(serializers.ModelSerializer):
         fields = ["message"]
 
 
+class PartialUpdateSerializer(serializers.ModelSerializer):
+    """
+    Validates input for `partial_update()` within `chat.views.ChatMessageViewSet`.
+    """
+
+    class Meta:
+        model = ChatMessage
+        fields = ["message"]
+
+
 class ReadOnlyChatterUserSerializer(serializers.Serializer):
     """
     Validates input for `chat.views.ChatGroupMemberViewSet`.

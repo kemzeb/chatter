@@ -242,3 +242,42 @@ async def test_create_chat_message(user_1, communicator_drek):
     assert msg["chat_group"] == chat_group.pk
     assert msg["message"] == my_message
     assert "created" in msg
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_partial_update_chat_message(user_1, communicator1, communicator_drek):
+    client = APIClient()
+    client.force_authenticate(user_1)
+
+    chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+    text = "If Al can't fix it, it's not broke"
+    message = await ChatMessage.objects.acreate(
+        user=user_1, chat_group=chat_group, message=text
+    )
+
+    new_text = "Meet me at my headquarters..."
+    response = await database_sync_to_async(client.patch)(
+        f"/api/chats/{chat_group.pk}/messages/{message.pk}/",
+        {"message": new_text},
+    )
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_200_OK
+
+    ws_event = await communicator1.receive_json_from()
+    assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
+    msg = ws_event["message"]
+    assert type(msg) == dict
+    assert msg["user"] == user_1.id
+    assert msg["chat_group"] == chat_group.pk
+    assert msg["message"] == new_text
+    assert "created" in msg
+
+    ws_event = await communicator_drek.receive_json_from()
+    assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
+    msg = ws_event["message"]
+    assert type(msg) == dict
+    assert msg["user"] == user_1.id
+    assert msg["chat_group"] == chat_group.pk
+    assert msg["message"] == new_text
+    assert "created" in msg

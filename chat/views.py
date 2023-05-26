@@ -143,12 +143,11 @@ class ChatMessageViewSet(ViewSet):
 
     def create(self, request, chat_id=None):
         serializer = serializers.CreateMessageSerializer(data=request.data)
-
         if not serializer.is_valid():
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        data = serializer.data
         chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
+        data = serializer.data
 
         # Make sure the user is a member of the group, else they can send a message to
         # any chat group!
@@ -166,3 +165,27 @@ class ChatMessageViewSet(ViewSet):
         )
 
         return Response(status=status.HTTP_201_CREATED, data={"id": message.pk})
+
+    def partial_update(self, request, chat_id=None, pk=None):
+        serializer = serializers.PartialUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        message = get_object_or_404(
+            ChatMessage.objects.filter(chat_group__pk=chat_id), pk=pk
+        )
+        if message.user != request.user:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.data
+        message.message = data["message"]
+        message.save()
+
+        update_message_serializer = serializers.ChatMessageSerializer(message)
+        publish_to_group(
+            message.chat_group,
+            update_message_serializer.data,
+            "handle_partial_update_message",
+        )
+
+        return Response(status=status.HTTP_200_OK)
