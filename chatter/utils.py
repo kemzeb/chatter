@@ -64,6 +64,7 @@ class EventName(enum.StrEnum):
     GROUP_FETCH = "group:fetch"
     GROUP_MESSAGE = "group:message"
     GROUP_MESSAGE_UPDATE = "group:message_update"
+    GROUP_MESSAGE_DELETE = "group:message_delete"
     GROUP_ADD = "group:add"
     GROUP_REMOVE = "group:remove"
     USER_FRIEND_REQUEST = "user:friendrequest"

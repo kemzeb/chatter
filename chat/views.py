@@ -189,3 +189,24 @@ class ChatMessageViewSet(ViewSet):
         )
 
         return Response(status=status.HTTP_200_OK)
+
+    def destroy(self, request, chat_id=None, pk=None):
+        message = get_object_or_404(
+            ChatMessage.objects.filter(chat_group__pk=chat_id), pk=pk
+        )
+
+        if message.user != request.user:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        chat_group = message.chat_group
+        message_id = message.pk
+
+        message.delete()
+
+        publish_to_group(
+            chat_group,
+            {"id": message_id, "chat_group": chat_group.pk},
+            "handle_destroy_message",
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

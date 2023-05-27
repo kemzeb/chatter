@@ -50,6 +50,9 @@ class ChatConsumer(JsonWebsocketConsumer):
     def handle_partial_update_message(self, event):
         self.send_event_to_client(EventName.GROUP_MESSAGE_UPDATE, event)
 
+    def handle_destroy_message(self, event):
+        self.send_event_to_client(EventName.GROUP_MESSAGE_DELETE, event)
+
     def handle_delete_friend(self, event):
         self.send_event_to_client(EventName.USER_UNFRIEND, event)
 

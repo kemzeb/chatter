@@ -58,6 +58,7 @@ def test_create_chat_group(user_1):
     client.force_authenticate(user_1)
     name = "Lo Wang Fan Club"
     response = client.post("/api/chats/", {"owner": user_1.id, "name": name})
+
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_201_CREATED
 
@@ -80,6 +81,7 @@ def test_retreive_chat_group(user_1):
 
     chat_group = ChatGroup.objects.get(name="Precursors rule")
     response = client.get(f"/api/chats/{chat_group.pk}/")
+
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_200_OK
 
@@ -113,6 +115,7 @@ def test_list_chat_group(user_drek, user_1):
     client.force_authenticate(user_drek)
 
     response = client.get("/api/chats/")
+
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_200_OK
 
@@ -135,6 +138,7 @@ async def test_destroy_chat_group(user_1, communicator_drek):
     response = await database_sync_to_async(client.delete)(
         f"/api/chats/{chat_group.pk}/"
     )
+
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
@@ -150,6 +154,7 @@ async def test_destroy_non_existent_chat_group(user_1):
     client.force_authenticate(user_1)
 
     response = await database_sync_to_async(client.delete)("/api/chats/12345/")
+
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -184,6 +189,7 @@ class TestChatGroupMemberViewSet:
             f"/api/chats/{chat_group.pk}/members/",
             {"id": user_drek.id},
         )
+
         assert isinstance(response, Response)
         assert response.status_code == status.HTTP_201_CREATED
 
@@ -203,6 +209,7 @@ class TestChatGroupMemberViewSet:
         response = await database_sync_to_async(client.delete)(
             f"/api/chats/{chat_group.pk}/members/{user_drek.id}/",
         )
+
         assert isinstance(response, Response)
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert await chat_group.members.acount() == 1
@@ -231,6 +238,7 @@ class TestChatMessageViewSet:
                 "message": my_message,
             },
         )
+
         assert isinstance(response, Response)
         assert response.status_code == status.HTTP_201_CREATED
 
@@ -259,6 +267,7 @@ class TestChatMessageViewSet:
             f"/api/chats/{chat_group.pk}/messages/{message.pk}/",
             {"message": new_text},
         )
+
         assert isinstance(response, Response)
         assert response.status_code == status.HTTP_200_OK
 
@@ -279,3 +288,35 @@ class TestChatMessageViewSet:
         assert msg["chat_group"] == chat_group.pk
         assert msg["message"] == new_text
         assert "created" in msg
+
+    async def test_destroy(self, user_1, communicator1, communicator_drek):
+        client = APIClient()
+        client.force_authenticate(user_1)
+
+        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+        message = await ChatMessage.objects.acreate(
+            user=user_1,
+            chat_group=chat_group,
+            message="How could I have known she was your sister",
+        )
+        message_id = message.pk
+        response = await database_sync_to_async(client.delete)(
+            f"/api/chats/{chat_group.pk}/messages/{message.pk}/"
+        )
+
+        assert isinstance(response, Response)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert await chat_group.messages.acount() == 2
+
+        ws_event = await communicator1.receive_json_from()
+        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_DELETE)
+        msg = ws_event["message"]
+        assert type(msg) == dict
+        assert msg["chat_group"] == chat_group.pk
+
+        ws_event = await communicator_drek.receive_json_from()
+        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_DELETE)
+        msg = ws_event["message"]
+        assert type(msg) == dict
+        assert msg["id"] == message_id
+        assert msg["chat_group"] == chat_group.pk
