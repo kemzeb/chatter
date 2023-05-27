@@ -172,112 +172,110 @@ async def test_destroy_chat_group_user_doesnt_own(user_1, user_drek):
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_create_chat_group_member(user_1, user_drek, communicator_drek):
-    client = APIClient()
-    client.force_authenticate(user_1)
+class TestChatGroupMemberViewSet:
+    async def test_create(self, user_1, user_drek, communicator_drek):
+        client = APIClient()
+        client.force_authenticate(user_1)
 
-    chat_group = await ChatGroup.objects.aget(owner=user_1, name="The Glory Of Panau")
-    response = await database_sync_to_async(client.post)(
-        f"/api/chats/{chat_group.pk}/members/",
-        {"id": user_drek.id},
-    )
-    assert isinstance(response, Response)
-    assert response.status_code == status.HTTP_201_CREATED
+        chat_group = await ChatGroup.objects.aget(
+            owner=user_1, name="The Glory Of Panau"
+        )
+        response = await database_sync_to_async(client.post)(
+            f"/api/chats/{chat_group.pk}/members/",
+            {"id": user_drek.id},
+        )
+        assert isinstance(response, Response)
+        assert response.status_code == status.HTTP_201_CREATED
 
-    ws_event = await communicator_drek.receive_json_from()
-    assert ws_event["event_type"] == str(EventName.GROUP_ADD)
+        ws_event = await communicator_drek.receive_json_from()
+        assert ws_event["event_type"] == str(EventName.GROUP_ADD)
 
-    msg = ws_event["message"]
-    assert msg["chat_group"] == chat_group.pk
-    assert msg["member"]["id"] == user_drek.id
-    assert msg["member"]["username"] == user_drek.username
+        msg = ws_event["message"]
+        assert msg["chat_group"] == chat_group.pk
+        assert msg["member"]["id"] == user_drek.id
+        assert msg["member"]["username"] == user_drek.username
 
+    async def test_destroy(self, user_1, user_drek, communicator_drek):
+        client = APIClient()
+        client.force_authenticate(user_1)
 
-@pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
-async def test_destroy_chat_group_member(user_1, user_drek, communicator_drek):
-    client = APIClient()
-    client.force_authenticate(user_1)
+        chat_group = await ChatGroup.objects.aget(owner=user_1, name="Precursors rule")
+        response = await database_sync_to_async(client.delete)(
+            f"/api/chats/{chat_group.pk}/members/{user_drek.id}/",
+        )
+        assert isinstance(response, Response)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert await chat_group.members.acount() == 1
 
-    chat_group = await ChatGroup.objects.aget(owner=user_1, name="Precursors rule")
-    response = await database_sync_to_async(client.delete)(
-        f"/api/chats/{chat_group.pk}/members/{user_drek.id}/",
-    )
-    assert isinstance(response, Response)
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-    assert await chat_group.members.acount() == 1
+        ws_event = await communicator_drek.receive_json_from()
+        assert ws_event["event_type"] == str(EventName.GROUP_REMOVE)
 
-    ws_event = await communicator_drek.receive_json_from()
-    assert ws_event["event_type"] == str(EventName.GROUP_REMOVE)
-
-    msg = ws_event["message"]
-    assert msg["chat_group"] == chat_group.pk
-    assert msg["member"]["id"] == user_drek.id
-    assert msg["member"]["username"] == user_drek.username
-
-
-@pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
-async def test_create_chat_message(user_1, communicator_drek):
-    client = APIClient()
-    client.force_authenticate(user_1)
-
-    chat_group = await ChatGroup.objects.aget(name="Precursors rule")
-    my_message = "Who were they again??"
-    response = await database_sync_to_async(client.post)(
-        f"/api/chats/{chat_group.pk}/messages/",
-        {
-            "message": my_message,
-        },
-    )
-    assert isinstance(response, Response)
-    assert response.status_code == status.HTTP_201_CREATED
-
-    ws_event = await communicator_drek.receive_json_from()
-    assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE)
-
-    msg = ws_event["message"]
-    assert type(msg) == dict
-    assert msg["user"] == user_1.id
-    assert msg["chat_group"] == chat_group.pk
-    assert msg["message"] == my_message
-    assert "created" in msg
+        msg = ws_event["message"]
+        assert msg["chat_group"] == chat_group.pk
+        assert msg["member"]["id"] == user_drek.id
+        assert msg["member"]["username"] == user_drek.username
 
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_partial_update_chat_message(user_1, communicator1, communicator_drek):
-    client = APIClient()
-    client.force_authenticate(user_1)
+class TestChatMessageViewSet:
+    async def test_create(self, user_1, communicator_drek):
+        client = APIClient()
+        client.force_authenticate(user_1)
 
-    chat_group = await ChatGroup.objects.aget(name="Precursors rule")
-    text = "If Al can't fix it, it's not broke"
-    message = await ChatMessage.objects.acreate(
-        user=user_1, chat_group=chat_group, message=text
-    )
+        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+        my_message = "Who were they again??"
+        response = await database_sync_to_async(client.post)(
+            f"/api/chats/{chat_group.pk}/messages/",
+            {
+                "message": my_message,
+            },
+        )
+        assert isinstance(response, Response)
+        assert response.status_code == status.HTTP_201_CREATED
 
-    new_text = "Meet me at my headquarters..."
-    response = await database_sync_to_async(client.patch)(
-        f"/api/chats/{chat_group.pk}/messages/{message.pk}/",
-        {"message": new_text},
-    )
-    assert isinstance(response, Response)
-    assert response.status_code == status.HTTP_200_OK
+        ws_event = await communicator_drek.receive_json_from()
+        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE)
 
-    ws_event = await communicator1.receive_json_from()
-    assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
-    msg = ws_event["message"]
-    assert type(msg) == dict
-    assert msg["user"] == user_1.id
-    assert msg["chat_group"] == chat_group.pk
-    assert msg["message"] == new_text
-    assert "created" in msg
+        msg = ws_event["message"]
+        assert type(msg) == dict
+        assert msg["user"] == user_1.id
+        assert msg["chat_group"] == chat_group.pk
+        assert msg["message"] == my_message
+        assert "created" in msg
 
-    ws_event = await communicator_drek.receive_json_from()
-    assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
-    msg = ws_event["message"]
-    assert type(msg) == dict
-    assert msg["user"] == user_1.id
-    assert msg["chat_group"] == chat_group.pk
-    assert msg["message"] == new_text
-    assert "created" in msg
+    async def test_partial_update(self, user_1, communicator1, communicator_drek):
+        client = APIClient()
+        client.force_authenticate(user_1)
+
+        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+        text = "If Al can't fix it, it's not broke"
+        message = await ChatMessage.objects.acreate(
+            user=user_1, chat_group=chat_group, message=text
+        )
+
+        new_text = "Meet me at my headquarters..."
+        response = await database_sync_to_async(client.patch)(
+            f"/api/chats/{chat_group.pk}/messages/{message.pk}/",
+            {"message": new_text},
+        )
+        assert isinstance(response, Response)
+        assert response.status_code == status.HTTP_200_OK
+
+        ws_event = await communicator1.receive_json_from()
+        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
+        msg = ws_event["message"]
+        assert type(msg) == dict
+        assert msg["user"] == user_1.id
+        assert msg["chat_group"] == chat_group.pk
+        assert msg["message"] == new_text
+        assert "created" in msg
+
+        ws_event = await communicator_drek.receive_json_from()
+        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
+        msg = ws_event["message"]
+        assert type(msg) == dict
+        assert msg["user"] == user_1.id
+        assert msg["chat_group"] == chat_group.pk
+        assert msg["message"] == new_text
+        assert "created" in msg
