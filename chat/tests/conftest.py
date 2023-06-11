@@ -17,7 +17,7 @@ def origin_header() -> tuple[bytes, bytes]:
 
 
 @pytest.fixture
-def user_1():
+def user_main():
     """
     Creates a user and also creates 2 of their own chat groups. They have the following
     names:
@@ -29,15 +29,15 @@ def user_1():
     user1 = User.objects.create(
         username="qwarkinator", email="qwark@example.com", password="fight_crime!12"
     )
-    group_1 = ChatGroup.objects.create(owner=user1, name="Precursors rule")
-    group_2 = ChatGroup.objects.create(owner=user1, name="The Glory Of Panau")
-    group_1.members.add(user1)
-    group_2.members.add(user1)
+    group1 = ChatGroup.objects.create(owner=user1, name="Precursors rule")
+    group2 = ChatGroup.objects.create(owner=user1, name="The Glory Of Panau")
+    group1.members.add(user1)
+    group2.members.add(user1)
 
-    ChatMessage.objects.create(user=user1, chat_group=group_1, message="Qwarktastic!")
+    ChatMessage.objects.create(user=user1, chat_group=group1, message="Qwarktastic!")
     ChatMessage.objects.create(
         user=user1,
-        chat_group=group_1,
+        chat_group=group1,
         message="That poor plumber and his social economic disparity.",
     )
 
@@ -59,16 +59,16 @@ def user_2():
 
 
 @pytest.fixture
-def user_drek(user_1):
+def user_drek(user_main):
     """
-    A user whose friends with `user_1` and is in their "Precursors rule" chat group.
+    A user whose friends with `user_main` and is in their "Precursors rule" chat group.
     """
     user3 = ChatterUser.objects.create(
         username="drekthechairman",
         email="drek@orxon.com",
         password="tryNottoLeaveanyMarks>:)",
     )
-    user3.friends.add(user_1)
+    user3.friends.add(user_main)
 
     chat_group = ChatGroup.objects.get(name="Precursors rule")
     chat_group.members.add(user3)
@@ -77,12 +77,14 @@ def user_drek(user_1):
 
 
 @pytest.fixture
-def communicator1_without_handling(origin_header, user_1) -> WebsocketCommunicator:
+def communicator_main_without_handling(
+    origin_header, user_main
+) -> WebsocketCommunicator:
     """
-    Creates a `WebsocketCommunicator` using the `user_1` fixture. You will need to call
-    `connect()` and `disconnect()` on the `WebsocketCommunicator` manually.
+    Creates a `WebsocketCommunicator` using the `user_main` fixture. You will need to
+    call `connect()` and `disconnect()` on the `WebsocketCommunicator` manually.
     """
-    jwt = RefreshToken.for_user(user_1)
+    jwt = RefreshToken.for_user(user_main)
     comm = WebsocketCommunicator(
         application,
         f"/ws/chat?token={jwt.access_token}",
@@ -93,23 +95,23 @@ def communicator1_without_handling(origin_header, user_1) -> WebsocketCommunicat
 
 
 @pytest_asyncio.fixture
-async def communicator1(communicator1_without_handling):
+async def communicator_main(communicator_main_without_handling):
     """
     Provides a `WebsocketCommunicator` that handles triggering connection and
-    disconnection. This uses the `user_1` fixture, hence the "1" in the fixture name.
+    disconnection. This uses the `user_main` fixture, hence the "1" in the fixture name.
     """
-    connected, _ = await communicator1_without_handling.connect()
+    connected, _ = await communicator_main_without_handling.connect()
     if not connected:
         pytest.fail("WebsocketCommunicator failed to connect.")
 
-    yield communicator1_without_handling
-    await communicator1_without_handling.disconnect()
+    yield communicator_main_without_handling
+    await communicator_main_without_handling.disconnect()
 
 
 @pytest_asyncio.fixture
 async def communicator2(user_2, origin_header):
     """
-    Just like `communicator1` but uses a channel associated to `user_2`.
+    Just like `communicator_main` but uses a channel associated to `user_2`.
     """
     jwt = RefreshToken.for_user(user_2)
     comm = WebsocketCommunicator(
@@ -128,7 +130,7 @@ async def communicator2(user_2, origin_header):
 @pytest_asyncio.fixture
 async def communicator_drek(user_drek, origin_header):
     """
-    Just like `communicator1` but uses a channel associated to `user_drek`.
+    Just like `communicator_main` but uses a channel associated to `user_drek`.
     """
     jwt = RefreshToken.for_user(user_drek)
     comm = WebsocketCommunicator(

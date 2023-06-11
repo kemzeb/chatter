@@ -8,7 +8,7 @@ from users.models import ChatterUser
 
 
 @pytest.fixture
-def user_1():
+def user_main():
     """
     Creates 4 users, and returns a user that is friends with 2 of them.
     """
@@ -36,13 +36,13 @@ def user_1():
 
 
 @pytest_asyncio.fixture
-async def communicator_1(user_1):
+async def communicator_main(user_main):
     """
     Provides a `WebsocketCommunicator` that handles triggering connection and
-    disconnection. This uses the `user_1` fixture, hence the "1" in the fixture name.
+    disconnection. This uses the `user_main` fixture, hence the "1" in the fixture name.
 
     """
-    jwt = RefreshToken.for_user(user_1)
+    jwt = RefreshToken.for_user(user_main)
     comm = WebsocketCommunicator(
         application,
         f"/ws/chat?token={jwt.access_token}",

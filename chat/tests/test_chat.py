@@ -32,11 +32,13 @@ class TestChatConsumer:
         # line is not included.
         await communicator.disconnect()
 
-    async def test_on_connect(self, communicator1_without_handling, user_1):
-        connected, _ = await communicator1_without_handling.connect()
+    async def test_on_connect(self, communicator_main_without_handling, user_main):
+        connected, _ = await communicator_main_without_handling.connect()
         assert connected
 
-        chat_group = await ChatGroup.objects.aget(owner=user_1, name="Precursors rule")
+        chat_group = await ChatGroup.objects.aget(
+            owner=user_main, name="Precursors rule"
+        )
         channel_layer = get_channel_layer()
         assert channel_layer is not None
         await channel_layer.group_send(
@@ -46,18 +48,18 @@ class TestChatConsumer:
             },
         )
 
-        response = await communicator1_without_handling.receive_json_from()
+        response = await communicator_main_without_handling.receive_json_from()
         assert response["event_type"] == str(EventName.GROUP_MESSAGE)
 
-        await communicator1_without_handling.disconnect()
+        await communicator_main_without_handling.disconnect()
 
 
 @pytest.mark.django_db
-def test_create_chat_group(user_1):
+def test_create_chat_group(user_main):
     client = APIClient()
-    client.force_authenticate(user_1)
+    client.force_authenticate(user_main)
     name = "Lo Wang Fan Club"
-    response = client.post("/api/chats/", {"owner": user_1.id, "name": name})
+    response = client.post("/api/chats/", {"owner": user_main.id, "name": name})
 
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_201_CREATED
@@ -75,9 +77,9 @@ def test_create_chat_group(user_1):
 
 
 @pytest.mark.django_db
-def test_retreive_chat_group(user_1):
+def test_retreive_chat_group(user_main):
     client = APIClient()
-    client.force_authenticate(user_1)
+    client.force_authenticate(user_main)
 
     chat_group = ChatGroup.objects.get(name="Precursors rule")
     response = client.get(f"/api/chats/{chat_group.pk}/")
@@ -89,8 +91,8 @@ def test_retreive_chat_group(user_1):
     data = json.loads(response.content)
     assert type(data) == dict
     assert "id" in data
-    assert data["owner"]["id"] == user_1.id
-    assert data["owner"]["username"] == user_1.username
+    assert data["owner"]["id"] == user_main.id
+    assert data["owner"]["username"] == user_main.username
 
     for member in data["members"]:
         manager = chat_group.members.filter(id=member["id"])
@@ -103,14 +105,14 @@ def test_retreive_chat_group(user_1):
         assert manager.exists()
         message_model = manager[0]
         assert message["id"] == message_model.pk
-        assert message["user"] == user_1.id
+        assert message["user"] == user_main.id
         assert message["message"] == message_model.message
         created = DateTimeField().to_representation(message_model.created)
         assert message["created"] == created
 
 
 @pytest.mark.django_db
-def test_list_chat_group(user_drek, user_1):
+def test_list_chat_group(user_drek, user_main):
     client = APIClient()
     client.force_authenticate(user_drek)
 
@@ -124,15 +126,15 @@ def test_list_chat_group(user_drek, user_1):
     assert type(data) == list
     assert len(data) == 1
     assert data[0]["name"] == "Precursors rule"
-    assert data[0]["owner"]["id"] == user_1.id
-    assert data[0]["owner"]["username"] == user_1.username
+    assert data[0]["owner"]["id"] == user_main.id
+    assert data[0]["owner"]["username"] == user_main.username
 
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_destroy_chat_group(user_1, communicator_drek):
+async def test_destroy_chat_group(user_main, communicator_main, communicator_drek):
     client = APIClient()
-    client.force_authenticate(user_1)
+    client.force_authenticate(user_main)
 
     chat_group = await ChatGroup.objects.aget(name="Precursors rule")
     response = await database_sync_to_async(client.delete)(
@@ -142,16 +144,20 @@ async def test_destroy_chat_group(user_1, communicator_drek):
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    ws_event = await communicator_drek.receive_json_from()
-    assert ws_event["event_type"] == str(EventName.GROUP_DESTROY)
-    assert "id" in ws_event["message"]
+    event = await communicator_main.receive_json_from()
+    assert event["event_type"] == str(EventName.GROUP_DESTROY)
+    assert "id" in event["message"]
+
+    event = await communicator_drek.receive_json_from()
+    assert event["event_type"] == str(EventName.GROUP_DESTROY)
+    assert "id" in event["message"]
 
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_destroy_non_existent_chat_group(user_1):
+async def test_destroy_non_existent_chat_group(user_main):
     client = APIClient()
-    client.force_authenticate(user_1)
+    client.force_authenticate(user_main)
 
     response = await database_sync_to_async(client.delete)("/api/chats/12345/")
 
@@ -161,9 +167,9 @@ async def test_destroy_non_existent_chat_group(user_1):
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_destroy_chat_group_user_doesnt_own(user_1, user_drek):
+async def test_destroy_chat_group_user_doesnt_own(user_main, user_drek):
     client = APIClient()
-    client.force_authenticate(user_1)
+    client.force_authenticate(user_main)
 
     dreks_chat_group = await ChatGroup.objects.acreate(
         owner=user_drek, name="Long Live the Blarg"
@@ -178,12 +184,14 @@ async def test_destroy_chat_group_user_doesnt_own(user_1, user_drek):
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 class TestChatGroupMemberViewSet:
-    async def test_create(self, user_1, user_drek, communicator_drek):
+    async def test_create(
+        self, user_main, user_drek, communicator_main, communicator_drek
+    ):
         client = APIClient()
-        client.force_authenticate(user_1)
+        client.force_authenticate(user_main)
 
         chat_group = await ChatGroup.objects.aget(
-            owner=user_1, name="The Glory Of Panau"
+            owner=user_main, name="The Glory Of Panau"
         )
         response = await database_sync_to_async(client.post)(
             f"/api/chats/{chat_group.pk}/members/",
@@ -193,19 +201,29 @@ class TestChatGroupMemberViewSet:
         assert isinstance(response, Response)
         assert response.status_code == status.HTTP_201_CREATED
 
-        ws_event = await communicator_drek.receive_json_from()
-        assert ws_event["event_type"] == str(EventName.GROUP_ADD)
-
-        msg = ws_event["message"]
+        event = await communicator_main.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_ADD)
+        msg = event["message"]
         assert msg["chat_group"] == chat_group.pk
         assert msg["member"]["id"] == user_drek.id
         assert msg["member"]["username"] == user_drek.username
 
-    async def test_destroy(self, user_1, user_drek, communicator_drek):
-        client = APIClient()
-        client.force_authenticate(user_1)
+        event = await communicator_drek.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_ADD)
+        msg = event["message"]
+        assert msg["chat_group"] == chat_group.pk
+        assert msg["member"]["id"] == user_drek.id
+        assert msg["member"]["username"] == user_drek.username
 
-        chat_group = await ChatGroup.objects.aget(owner=user_1, name="Precursors rule")
+    async def test_destroy(
+        self, user_main, user_drek, communicator_main, communicator_drek
+    ):
+        client = APIClient()
+        client.force_authenticate(user_main)
+
+        chat_group = await ChatGroup.objects.aget(
+            owner=user_main, name="Precursors rule"
+        )
         response = await database_sync_to_async(client.delete)(
             f"/api/chats/{chat_group.pk}/members/{user_drek.id}/",
         )
@@ -214,10 +232,16 @@ class TestChatGroupMemberViewSet:
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert await chat_group.members.acount() == 1
 
-        ws_event = await communicator_drek.receive_json_from()
-        assert ws_event["event_type"] == str(EventName.GROUP_REMOVE)
+        event = await communicator_main.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_REMOVE)
+        msg = event["message"]
+        assert msg["chat_group"] == chat_group.pk
+        assert msg["member"]["id"] == user_drek.id
+        assert msg["member"]["username"] == user_drek.username
 
-        msg = ws_event["message"]
+        event = await communicator_drek.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_REMOVE)
+        msg = event["message"]
         assert msg["chat_group"] == chat_group.pk
         assert msg["member"]["id"] == user_drek.id
         assert msg["member"]["username"] == user_drek.username
@@ -226,9 +250,9 @@ class TestChatGroupMemberViewSet:
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 class TestChatMessageViewSet:
-    async def test_create(self, user_1, communicator_drek):
+    async def test_create(self, user_main, communicator_main, communicator_drek):
         client = APIClient()
-        client.force_authenticate(user_1)
+        client.force_authenticate(user_main)
 
         chat_group = await ChatGroup.objects.aget(name="Precursors rule")
         my_message = "Who were they again??"
@@ -242,24 +266,34 @@ class TestChatMessageViewSet:
         assert isinstance(response, Response)
         assert response.status_code == status.HTTP_201_CREATED
 
-        ws_event = await communicator_drek.receive_json_from()
-        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE)
-
-        msg = ws_event["message"]
+        event = await communicator_main.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_MESSAGE)
+        msg = event["message"]
         assert type(msg) == dict
-        assert msg["user"] == user_1.id
+        assert msg["user"] == user_main.id
         assert msg["chat_group"] == chat_group.pk
         assert msg["message"] == my_message
         assert "created" in msg
 
-    async def test_partial_update(self, user_1, communicator1, communicator_drek):
+        event = await communicator_drek.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_MESSAGE)
+        msg = event["message"]
+        assert type(msg) == dict
+        assert msg["user"] == user_main.id
+        assert msg["chat_group"] == chat_group.pk
+        assert msg["message"] == my_message
+        assert "created" in msg
+
+    async def test_partial_update(
+        self, user_main, communicator_main, communicator_drek
+    ):
         client = APIClient()
-        client.force_authenticate(user_1)
+        client.force_authenticate(user_main)
 
         chat_group = await ChatGroup.objects.aget(name="Precursors rule")
         text = "If Al can't fix it, it's not broke"
         message = await ChatMessage.objects.acreate(
-            user=user_1, chat_group=chat_group, message=text
+            user=user_main, chat_group=chat_group, message=text
         )
 
         new_text = "Meet me at my headquarters..."
@@ -271,31 +305,31 @@ class TestChatMessageViewSet:
         assert isinstance(response, Response)
         assert response.status_code == status.HTTP_200_OK
 
-        ws_event = await communicator1.receive_json_from()
-        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
-        msg = ws_event["message"]
+        event = await communicator_main.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
+        msg = event["message"]
         assert type(msg) == dict
-        assert msg["user"] == user_1.id
+        assert msg["user"] == user_main.id
         assert msg["chat_group"] == chat_group.pk
         assert msg["message"] == new_text
         assert "created" in msg
 
-        ws_event = await communicator_drek.receive_json_from()
-        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
-        msg = ws_event["message"]
+        event = await communicator_drek.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
+        msg = event["message"]
         assert type(msg) == dict
-        assert msg["user"] == user_1.id
+        assert msg["user"] == user_main.id
         assert msg["chat_group"] == chat_group.pk
         assert msg["message"] == new_text
         assert "created" in msg
 
-    async def test_destroy(self, user_1, communicator1, communicator_drek):
+    async def test_destroy(self, user_main, communicator_main, communicator_drek):
         client = APIClient()
-        client.force_authenticate(user_1)
+        client.force_authenticate(user_main)
 
         chat_group = await ChatGroup.objects.aget(name="Precursors rule")
         message = await ChatMessage.objects.acreate(
-            user=user_1,
+            user=user_main,
             chat_group=chat_group,
             message="How could I have known she was your sister",
         )
@@ -308,15 +342,15 @@ class TestChatMessageViewSet:
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert await chat_group.messages.acount() == 2
 
-        ws_event = await communicator1.receive_json_from()
-        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_DELETE)
-        msg = ws_event["message"]
+        event = await communicator_main.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_MESSAGE_DELETE)
+        msg = event["message"]
         assert type(msg) == dict
         assert msg["chat_group"] == chat_group.pk
 
-        ws_event = await communicator_drek.receive_json_from()
-        assert ws_event["event_type"] == str(EventName.GROUP_MESSAGE_DELETE)
-        msg = ws_event["message"]
+        event = await communicator_drek.receive_json_from()
+        assert event["event_type"] == str(EventName.GROUP_MESSAGE_DELETE)
+        msg = event["message"]
         assert type(msg) == dict
         assert msg["id"] == message_id
         assert msg["chat_group"] == chat_group.pk
