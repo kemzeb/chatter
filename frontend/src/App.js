@@ -2,25 +2,53 @@ import { Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import RequireAuth from './utils/RequireAuth';
 import { AuthProvider } from './utils/AuthContext';
+import Friends from './components/Friends';
+import ChatGroup from './components/ChatGroup';
+import RequireAuth from './utils/RequireAuth';
+import NotFound from './pages/NotFound';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+
+const theme = createTheme({
+  typography: {
+    fontFamily: ['Roboto', 'NotoSans', 'sans-serif'].join(',')
+  },
+  palette: {
+    // TODO: Support light/dark theme globally!
+    mode: 'dark',
+    primary: {
+      main: '#00b4ff'
+    },
+    secondary: {
+      main: '#36393f'
+    }
+  },
+  shadows: 'none'
+});
 
 function App() {
   return (
-    <AuthProvider>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/dashboard"
-          element={
-            <RequireAuth>
-              <Dashboard />
-            </RequireAuth>
-          }
-        />
-      </Routes>
-    </AuthProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }>
+            <Route index element={<Friends />} />
+            <Route path="chats/:id" element={<ChatGroup />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
