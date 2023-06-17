@@ -11,10 +11,39 @@ export function getExampleChatGroups() {
     'Great Khans Fan Club',
     'Brotherhood of Steel Fan Club',
     'What in the GECK?'
-  ].map((value, index) => {
+  ].map((group, index) => {
     return {
       id: index,
-      name: value
+      name: group
+    };
+  });
+}
+
+export function getExampleFriends() {
+  return [
+    'luikangpang',
+    'paganmin',
+    'pattycakepraxis',
+    'pacman',
+    'paynes_me_max',
+    'spacehunter',
+    'CrateOs',
+    'ancientrhodes',
+    'marcopolooffical',
+    'badlands',
+    'dust',
+    'oasis',
+    'yesman',
+    'drzero',
+    'drekthechairman',
+    'shangsungasong',
+    'rayden',
+    'barakathetarkata',
+    'bo_rai_no'
+  ].map((friend, index) => {
+    return {
+      id: index,
+      username: friend
     };
   });
 }
