@@ -1,14 +1,19 @@
-import { useContext } from 'react';
-import AuthContext from '../utils/AuthContext';
+import Sidebar from '../components/Sidebar';
+import ActivityView from '../components/ActivityView';
+import Box from '@mui/material/Box';
 
 function Dashboard() {
-  const { user, logoutUser } = useContext(AuthContext);
-  console.log(user);
   return (
-    <>
-      <h1 style={{ color: 'red' }}>User Id: {user.user_id}</h1>
-      <button onClick={logoutUser}>Log Out</button>
-    </>
+    <Box
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '252px 1fr',
+        minWidth: '100vw',
+        minHeight: '100vh'
+      }}>
+      <Sidebar />
+      <ActivityView />
+    </Box>
   );
 }
 
