@@ -22,7 +22,6 @@ function Sidebar() {
   return (
     <Box
       sx={{
-        flex: '0 0 16rem',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',

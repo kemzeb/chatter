@@ -47,3 +47,33 @@ export function getExampleFriends() {
     };
   });
 }
+
+export function getExampleMessages() {
+  return [
+    'CrateOs',
+    'CrateOs',
+    'rayden',
+    'rayden',
+    'shangsungasong',
+    'barakathetarkata',
+    'badlands',
+    'pattycakepraxis',
+    'pattycakepraxis',
+    'pattycakepraxis',
+    'drzero',
+    'drzero',
+    'ancientrhodes',
+    'drekthechairman',
+    'drekthechairman',
+    'drekthechairman',
+    'rayden',
+    'bo_rai_no'
+  ].map((user, index) => {
+    return {
+      id: index,
+      user: index,
+      username: user,
+      message: 'This is a test message'
+    };
+  });
+}

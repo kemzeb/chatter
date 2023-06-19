@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import GroupIcon from '@mui/icons-material/Group';
+import ForumIcon from '@mui/icons-material/Forum';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
@@ -19,9 +20,18 @@ function FriendSpecificBar() {
   );
 }
 
+function ChatGroupSpecificBar() {
+  return (
+    <Box style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <ForumIcon color="primary" />
+      <Typography>Chat Group</Typography>
+    </Box>
+  );
+}
+
 function ActivityBar() {
   const location = useLocation();
-  const [path, setPath] = useState(null);
+  const [path, setPath] = useState(location.pathname);
 
   useEffect(() => {
     setPath(location.pathname);
@@ -31,13 +41,12 @@ function ActivityBar() {
     <>
       <Box
         style={{
-          height: '48px',
           display: 'flex',
           alignItems: 'center',
           padding: '8px',
           backgroundColor: '#424549'
         }}>
-        {path === '/dashboard' && <FriendSpecificBar />}
+        {(path.startsWith('/dashboard/chats') && <ChatGroupSpecificBar />) || <FriendSpecificBar />}
       </Box>
     </>
   );

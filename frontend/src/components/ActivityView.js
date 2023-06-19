@@ -4,7 +4,7 @@ import ActivityBar from './ActivityBar';
 
 function ActivityView() {
   return (
-    <Box sx={{ flexGrow: '2', bgcolor: '#23272A' }}>
+    <Box style={{ display: 'grid', gridTemplateRows: '48px auto', backgroundColor: '#23272A' }}>
       <ActivityBar />
       <Outlet />
     </Box>
