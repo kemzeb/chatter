@@ -7,8 +7,43 @@ on:
     branches: ["main"]
 
 jobs:
-  python_lint_test:
+  lint:
     runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.11
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[rest]
+
+      - name: Lint with flake8
+        run: flake8 . --count --show-source --statistics
+
+      - name: Verify formatting with black
+        run: black . --check --diff
+
+      - name: Verify sort formatting with isort
+        run: isort **/*.py --check -v
+
+      - name: Install JavaScript modules
+        working-directory: ./frontend
+        # FIXME: We should just be installing ESLint-related modules.
+        run: |
+          npm install
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: |
+          ./node_modules/eslint/bin/eslint.js src/
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
 
     services:
       postgres:
@@ -24,6 +59,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
         ports:
           - 5432:5432
 
@@ -37,15 +73,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .[rest]
-
-      - name: Lint with flake8
-        run: flake8 . --count --show-source --statistics
-
-      - name: Verify formatting with black
-        run: black . --check --diff
-
-      - name: Verify sort formatting with isort
-        run: isort **/*.py --check -v
 
       - name: Create .env file
         run: |
