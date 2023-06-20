@@ -1,5 +1,5 @@
 import axios from 'axios';
-import jwt_decode from 'jwt-decode';
+import jwtDecode from 'jwt-decode';
 import { useContext } from 'react';
 import AuthContext from '../context/AuthContext';
 import { baseUrl } from './consts';
@@ -29,7 +29,7 @@ function useAuthAxios() {
           });
           localStorage.setItem('authTokens', JSON.stringify(refreshResponse.data));
           setAuthTokens(refreshResponse.data);
-          setUser(jwt_decode(refreshResponse.data.access));
+          setUser(jwtDecode(refreshResponse.data.access));
 
           originalRequest['headers'] = { Authorization: `Bearer ${refreshResponse.data.access}` };
           return axiosInstance(originalRequest);
