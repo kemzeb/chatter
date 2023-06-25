@@ -13,8 +13,10 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { getExampleChatGroups } from '../utils/examples';
+import { useNavigate } from 'react-router-dom';
 
 function Sidebar() {
+  const navigate = useNavigate();
   const friendsText = 'Friends';
   const newChatGroupText = 'New Chat Group';
   const data = getExampleChatGroups();
@@ -30,7 +32,7 @@ function Sidebar() {
       <Box sx={{ padding: '16px 16px 0px 16px ' }}>
         <List>
           <ListItem key={friendsText} disablePadding>
-            <ListItemButton disableGutters>
+            <ListItemButton disableGutters key={friendsText} onClick={() => navigate('/dashboard')}>
               <ListItemIcon>
                 <GroupIcon color="primary" />
               </ListItemIcon>
