@@ -8,7 +8,7 @@ import AuthContext from '../utils/AuthContext';
 function Dashboard() {
   const { authTokens } = useContext(AuthContext);
 
-  useSubscriber(`ws://localhost:8000/ws/chat?token=${authTokens?.access}`, (message) =>
+  useSubscriber(`ws://localhost:8000/ws/chat?token=${authTokens.current.access}`, (message) =>
     console.log(message)
   );
 

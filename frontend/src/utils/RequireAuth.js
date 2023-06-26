@@ -7,7 +7,7 @@ function RequireAuth({ children }) {
   const { user } = useContext(AuthContext);
   const location = useLocation();
 
-  return user ? children : <Navigate to="/" state={{ from: location }} />;
+  return user.current ? children : <Navigate to="/" state={{ from: location }} />;
 }
 
 RequireAuth.propTypes = {

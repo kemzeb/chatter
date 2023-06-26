@@ -1,11 +1,9 @@
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, redirect } from 'react-router-dom';
 import UserForm from '../components/UserForm';
 import '../components/UserForm.css';
 
 function Register() {
-  const navigate = useNavigate();
-
   const handleRegister = (e) => {
     e.preventDefault();
 
@@ -17,7 +15,7 @@ function Register() {
       })
       .then(() => {
         alert('Account successfully registered!');
-        navigate('/');
+        redirect('/');
       })
       .catch((error) => {
         const data = error.response.data;
