@@ -18,7 +18,7 @@ class ChatGroupListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatGroup
-        fields = ["owner", "name"]
+        fields = ["id", "owner", "name"]
         read_only_fields = [*fields]
 
 

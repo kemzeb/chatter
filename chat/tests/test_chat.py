@@ -125,6 +125,7 @@ def test_list_chat_group(user_drek, user_main):
     data = json.loads(response.content)
     assert type(data) == list
     assert len(data) == 1
+    assert "id" in data[0]
     assert data[0]["name"] == "Precursors rule"
     assert data[0]["owner"]["id"] == user_main.id
     assert data[0]["owner"]["username"] == user_main.username
