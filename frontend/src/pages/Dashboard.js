@@ -17,8 +17,8 @@ function Dashboard() {
       style={{
         display: 'grid',
         gridTemplateColumns: '252px 1fr',
-        minWidth: '100vw',
-        minHeight: '100vh'
+        width: '100vw',
+        height: '100vh'
       }}>
       <Sidebar />
       <ActivityView />

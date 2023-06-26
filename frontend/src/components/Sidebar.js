@@ -12,24 +12,32 @@ import ListItemText from '@mui/material/ListItemText';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import { getExampleChatGroups } from '../utils/examples';
 import { useNavigate } from 'react-router-dom';
+import useAxios from '../utils/useAxios';
+import { useEffect, useState } from 'react';
 
 function Sidebar() {
+  const axios = useAxios();
+  const [chatGroups, setChatGroups] = useState([]);
   const navigate = useNavigate();
   const friendsText = 'Friends';
   const newChatGroupText = 'New Chat Group';
-  const data = getExampleChatGroups();
+
+  useEffect(() => {
+    axios.get('/api/chats/').then((response) => {
+      setChatGroups(response.data);
+    });
+  }, []);
 
   return (
     <Box
-      sx={{
+      style={{
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        bgcolor: '#36393f'
+        backgroundColor: '#36393f'
       }}>
-      <Box sx={{ padding: '16px 16px 0px 16px ' }}>
+      <Box style={{ padding: '0px 16px ' }}>
         <List>
           <ListItem key={friendsText} disablePadding>
             <ListItemButton disableGutters key={friendsText} onClick={() => navigate('/dashboard')}>
@@ -49,13 +57,13 @@ function Sidebar() {
           </ListItem>
         </List>
         <Divider />
-        <List style={{ maxHeight: '78vh', overflowY: 'auto', overscrollBehavior: 'contain' }}>
+        <List style={{ maxHeight: '68vh', overflowY: 'auto', overscrollBehavior: 'contain' }}>
           <ListItem key={-1} disablePadding>
             <ListItemText primaryTypographyProps={{ fontFamily: 'NotoSans' }}>
               CHAT GROUPS
             </ListItemText>
           </ListItem>
-          {data.map((group) => {
+          {chatGroups.map((group) => {
             return (
               <ListItem key={group.id} disablePadding>
                 <ListItemButton disableGutters>
@@ -71,8 +79,7 @@ function Sidebar() {
       </Box>
       <Box
         sx={{
-          paddingLeft: '16px',
-          paddingRight: '16px',
+          padding: '0px 16px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',

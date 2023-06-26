@@ -1,14 +1,13 @@
 import axios from 'axios';
 import jwtDecode from 'jwt-decode';
 import { useContext } from 'react';
-import AuthContext from '../context/AuthContext';
-import { baseUrl } from './consts';
+import AuthContext from './AuthContext';
 
-function useAuthAxios() {
+function useAxios() {
   const { authTokens, setUser, setAuthTokens } = useContext(AuthContext);
 
   const axiosInstance = axios.create({
-    baseURL: baseUrl,
+    baseURL: window.location.protocol + '//' + window.location.host,
     headers: { Authorization: `Bearer ${authTokens?.access}` }
   });
 
@@ -24,14 +23,20 @@ function useAuthAxios() {
         originalRequest._retry = true;
 
         if (error.response.status == 401) {
-          const refreshResponse = await axios.post(`/api/users/auth/login/refresh/`, {
+          const refreshResponse = await axiosInstance.post(`/api/users/auth/login/refresh/`, {
             refresh: authTokens.refresh
           });
+          // FIXME: Handle failure to refresh JWT (maybe just navigate back to login).
           localStorage.setItem('authTokens', JSON.stringify(refreshResponse.data));
-          setAuthTokens(refreshResponse.data);
+          setAuthTokens((prevTokens) => {
+            return {
+              access: refreshResponse.data['access'],
+              refresh: prevTokens['refresh']
+            };
+          });
           setUser(jwtDecode(refreshResponse.data.access));
-
           originalRequest['headers'] = { Authorization: `Bearer ${refreshResponse.data.access}` };
+
           return axiosInstance(originalRequest);
         }
       }
@@ -43,4 +48,4 @@ function useAuthAxios() {
   return axiosInstance;
 }
 
-export default useAuthAxios;
+export default useAxios;

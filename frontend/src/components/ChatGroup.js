@@ -23,7 +23,7 @@ function ChatGroup() {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            height: '87vh',
+            height: '85vh',
             overflow: 'auto',
             overscrollBehavior: 'contain'
           }}>
@@ -61,7 +61,7 @@ function ChatGroup() {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            maxHeight: '87vh',
+            maxHeight: '85vh',
             overflow: 'auto',
             overscrollBehavior: 'contain'
           }}>

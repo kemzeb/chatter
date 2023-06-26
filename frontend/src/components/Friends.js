@@ -25,7 +25,7 @@ function Friends() {
       />
       <Typography style={{ marginBottom: '8px' }}>Friends</Typography>
       <Divider />
-      <List style={{ maxHeight: '80vh', overflowY: 'auto', overscrollBehavior: 'contain' }}>
+      <List style={{ maxHeight: '78vh', overflowY: 'auto', overscrollBehavior: 'contain' }}>
         {friends.map((friend) => {
           return (
             <ListItem key={friend.id} disableGutters divider>
