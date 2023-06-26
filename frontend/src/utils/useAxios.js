@@ -1,55 +1,72 @@
 import axios from 'axios';
-import jwtDecode from 'jwt-decode';
-import { useContext } from 'react';
+import { useCallback, useContext } from 'react';
 import AuthContext from './AuthContext';
-import { redirect } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-function useAxios() {
-  const { authTokens, user } = useContext(AuthContext);
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+function useAxiosProtected() {
+  const { getAuthTokens, storeAuthTokens, logOutUser } = useContext(AuthContext);
+  const tokens = getAuthTokens();
+  const navigate = useNavigate();
+
+  if (!tokens) navigate('/');
 
   const axiosInstance = axios.create({
     baseURL: window.location.protocol + '//' + window.location.host,
-    headers: { Authorization: `Bearer ${authTokens.current.access}` }
+    headers: { Authorization: `Bearer ${tokens.access}` }
   });
 
+  const refreshAccessToken = useCallback(() =>
+    axiosInstance
+      .post(`/api/users/auth/login/refresh/`, {
+        refresh: tokens.refresh
+      })
+      .then((response) => {
+        const newAccess = response.data['access'];
+        storeAuthTokens(newAccess, tokens.refresh);
+        return newAccess;
+      })
+      .catch(() => {
+        logOutUser();
+        navigate('/');
+      })
+  );
+
   axiosInstance.interceptors.response.use(
-    async (resp) => {
-      return resp;
-    },
-    async (error) => {
-      if (error.response) {
-        const originalRequest = error.config;
+    (resp) => resp,
+    (error) => {
+      const originalRequest = error.config;
 
-        if (originalRequest._retry) return Promise.reject(error);
-        originalRequest._retry = true;
-
-        if (error.response.status == 401) {
-          const refreshResponse = await axiosInstance
-            .post(`/api/users/auth/login/refresh/`, {
-              refresh: authTokens.current.refresh
-            })
-            .catch(() => {
-              redirect('/');
+      if (error.response.status == 401 && !originalRequest._retry) {
+        if (isRefreshing) {
+          return new Promise((resolve) => {
+            // Currently refreshing, subscribe this request as a callback so that it may
+            // be serviced when we get a valid access token.
+            subscribeTokenRefresh((accessToken) => {
+              originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+              resolve(axiosInstance(originalRequest));
             });
-
-          const access = refreshResponse.data['access'];
-
-          localStorage.setItem(
-            'authTokens',
-            JSON.stringify({
-              access: access,
-              refresh: authTokens.current.refresh
-            })
-          );
-          authTokens.current = {
-            access: access,
-            refresh: authTokens.current.refresh
-          };
-          user.current = jwtDecode(access);
-          originalRequest['headers'] = { Authorization: `Bearer ${refreshResponse.data.access}` };
-
-          return axiosInstance(originalRequest);
+          });
         }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        return new Promise((resolve, reject) => {
+          refreshAccessToken()
+            .then((accessToken) => {
+              originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+              // Process the original request.
+              resolve(axiosInstance(originalRequest));
+
+              // Notify other pending requests of the valid access token.
+              publishTokenRefresh(accessToken);
+            })
+            .catch((error) => reject(error));
+        });
       }
 
       return Promise.reject(error);
@@ -59,4 +76,13 @@ function useAxios() {
   return axiosInstance;
 }
 
-export default useAxios;
+function subscribeTokenRefresh(callback) {
+  refreshSubscribers.push(callback);
+}
+
+function publishTokenRefresh(accessToken) {
+  refreshSubscribers.forEach((callback) => callback(accessToken));
+  refreshSubscribers = [];
+}
+
+export default useAxiosProtected;

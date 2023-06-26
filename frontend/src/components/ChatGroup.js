@@ -5,12 +5,17 @@ import { List, ListItem, Typography, TextField } from '@mui/material';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Avatar from '@mui/material/Avatar';
+import { useNavigate } from 'react-router-dom';
 import { getExampleMessages, getExampleFriends } from '../utils/examples';
 
 function ChatGroup() {
-  const { user } = useContext(AuthContext);
+  const { getUser } = useContext(AuthContext);
+  const navigate = useNavigate();
   const messages = getExampleMessages();
   const members = getExampleFriends();
+  const user = getUser();
+
+  if (!user) navigate('/');
 
   return (
     <Box

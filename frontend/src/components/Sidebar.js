@@ -13,11 +13,11 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
-import useAxios from '../utils/useAxios';
+import useAxiosProtected from '../utils/useAxios';
 import { useEffect, useState } from 'react';
 
 function Sidebar() {
-  const axios = useAxios();
+  const axios = useAxiosProtected();
   const [chatGroups, setChatGroups] = useState([]);
   const navigate = useNavigate();
   const friendsText = 'Friends';

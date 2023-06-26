@@ -4,10 +4,10 @@ import { useContext } from 'react';
 import AuthContext from './AuthContext';
 
 function RequireAuth({ children }) {
-  const { user } = useContext(AuthContext);
+  const { getUser } = useContext(AuthContext);
   const location = useLocation();
 
-  return user.current ? children : <Navigate to="/" state={{ from: location }} />;
+  return getUser() ? children : <Navigate to="/" state={{ from: location }} />;
 }
 
 RequireAuth.propTypes = {
