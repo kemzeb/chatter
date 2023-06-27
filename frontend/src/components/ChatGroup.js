@@ -6,7 +6,6 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Avatar from '@mui/material/Avatar';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getExampleFriends } from '../utils/examples';
 import useAxiosProtected from '../utils/useAxiosProtected';
 
 function ChatGroup() {
@@ -16,7 +15,7 @@ function ChatGroup() {
   const axios = useAxiosProtected();
   const navigate = useNavigate();
   const { id } = useParams();
-  const members = getExampleFriends();
+  const [members, setMembers] = useState([]);
   const user = getUser();
 
   if (!user) navigate('/');
@@ -33,6 +32,9 @@ function ChatGroup() {
   useEffect(() => {
     axios.get(`/api/chats/${id}/messages/`).then((response) => {
       setMessages(response.data);
+    });
+    axios.get(`/api/chats/${id}/members/`).then((response) => {
+      setMembers(response.data);
     });
   }, [id]);
 
@@ -94,13 +96,13 @@ function ChatGroup() {
           }}>
           {members.map((member) => {
             return (
-              <ListItem key={member.id} disableGutters>
+              <ListItem key={member.user.id} disableGutters>
                 <ListItemAvatar>
                   <Avatar style={{ width: '34px', height: '32px' }}>
-                    {member.username.charAt(0).toLowerCase()}
+                    {member.user.username.charAt(0).toLowerCase()}
                   </Avatar>
                 </ListItemAvatar>
-                <ListItemText primary={member.username} fontSize={12} />
+                <ListItemText primary={member.user.username} fontSize={12} />
               </ListItem>
             );
           })}
