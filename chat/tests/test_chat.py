@@ -100,16 +100,6 @@ def test_retreive_chat_group(user_main):
         member_model = manager[0]
         assert "username" in member and member["username"] == member_model.username
 
-    for message in data["messages"]:
-        manager = ChatMessage.objects.filter(id=message["id"])
-        assert manager.exists()
-        message_model = manager[0]
-        assert message["id"] == message_model.pk
-        assert message["user"] == user_main.id
-        assert message["message"] == message_model.message
-        created = DateTimeField().to_representation(message_model.created)
-        assert message["created"] == created
-
 
 @pytest.mark.django_db
 def test_list_chat_group(user_drek, user_main):
@@ -323,6 +313,41 @@ class TestChatMessageViewSet:
         assert msg["chat_group"] == chat_group.pk
         assert msg["message"] == new_text
         assert "created" in msg
+
+    async def test_list_existing_member(self, user_main):
+        client = APIClient()
+        client.force_authenticate(user_main)
+
+        chat_group = await ChatGroup.objects.aget(
+            owner=user_main, name="Precursors rule"
+        )
+        response = await database_sync_to_async(client.get)(
+            f"/api/chats/{chat_group.pk}/messages/",
+        )
+        assert isinstance(response, Response)
+        assert response.status_code == status.HTTP_200_OK
+        response.render()
+        data = json.loads(response.content)
+        assert isinstance(data, list)
+        for message in data:
+            msg_obj = await ChatMessage.objects.aget(id=message["id"])
+            assert message["id"] == msg_obj.pk
+            assert message["user"] == user_main.id
+            assert message["message"] == msg_obj.message
+            created = DateTimeField().to_representation(msg_obj.created)
+            assert message["created"] == created
+
+    @pytest.mark.usefixtures("user_main")
+    async def test_list_non_member(self, user_2):
+        client = APIClient()
+        client.force_authenticate(user_2)
+
+        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+        response = await database_sync_to_async(client.get)(
+            f"/api/chats/{chat_group.pk}/messages/",
+        )
+        assert isinstance(response, Response)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     async def test_destroy(self, user_main, communicator_main, communicator_drek):
         client = APIClient()

@@ -25,7 +25,7 @@ class ChatGroupViewSet(ViewSet):
     def retrieve(self, request, pk=None):
         chat_group = get_object_or_404(ChatGroup.objects.all(), pk=pk)
 
-        # Make sure the user is a member of the group, else they can ust fetch the
+        # Make sure the user is a member of the group, else they can fetch the
         # details of any group!
         is_member = chat_group.members.contains(request.user)
         if not is_member:
@@ -189,6 +189,17 @@ class ChatMessageViewSet(ViewSet):
         )
 
         return Response(status=status.HTTP_200_OK)
+
+    def list(self, request, chat_id=None):
+        chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
+
+        if not chat_group.members.contains(request.user):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        serializer = serializers.ChatMessageSerializer(
+            ChatMessage.objects.filter(chat_group=chat_id), many=True
+        )
+        return Response(serializer.data)
 
     def destroy(self, request, chat_id=None, pk=None):
         message = get_object_or_404(
