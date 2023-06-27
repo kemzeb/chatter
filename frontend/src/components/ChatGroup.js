@@ -12,6 +12,7 @@ import useAxiosProtected from '../utils/useAxiosProtected';
 function ChatGroup() {
   const { getUser } = useContext(AuthContext);
   const [messages, setMessages] = useState([]);
+  const [chatMessage, setChatMessage] = useState('');
   const axios = useAxiosProtected();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -19,6 +20,15 @@ function ChatGroup() {
   const user = getUser();
 
   if (!user) navigate('/');
+
+  const handleTextInput = (event) => {
+    if (event.key == 'Enter' && event.target.value) {
+      axios.post(`/api/chats/${id}/messages/`, {
+        message: event.target.value
+      });
+      setChatMessage('');
+    }
+  };
 
   useEffect(() => {
     axios.get(`/api/chats/${id}/messages/`).then((response) => {
@@ -64,7 +74,10 @@ function ChatGroup() {
           size="small"
           variant="outlined"
           placeholder="Search"
+          value={chatMessage}
           style={{ margin: '8px 16px 16px 16px' }}
+          onKeyDown={handleTextInput}
+          onChange={(event) => setChatMessage(event.target.value)}
         />
       </Box>
       <Box style={{ padding: '20px' }}>
