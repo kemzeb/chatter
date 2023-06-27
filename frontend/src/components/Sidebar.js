@@ -74,7 +74,9 @@ function Sidebar() {
           {chatGroups.map((group) => {
             return (
               <ListItem key={group.id} disablePadding>
-                <ListItemButton disableGutters>
+                <ListItemButton
+                  disableGutters
+                  onClick={() => navigate(`/dashboard/chats/${group.id}`)}>
                   <ListItemAvatar>
                     <Avatar>{group.name[0]}</Avatar>
                   </ListItemAvatar>
