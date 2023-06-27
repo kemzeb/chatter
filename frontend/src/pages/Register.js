@@ -5,7 +5,6 @@ import '../components/UserForm.css';
 
 function Register() {
   const navigate = useNavigate();
-
   const handleRegister = (e) => {
     e.preventDefault();
 

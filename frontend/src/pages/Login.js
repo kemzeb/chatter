@@ -12,7 +12,6 @@ function Login() {
     e.preventDefault();
 
     loginUser(e).then((loginWasSuccessful) => {
-      console.log(loginWasSuccessful);
       if (loginWasSuccessful) {
         navigate('/dashboard');
       } else {

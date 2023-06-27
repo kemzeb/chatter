@@ -4,11 +4,15 @@ import Box from '@mui/material/Box';
 import { useContext } from 'react';
 import useSubscriber from '../utils/useSubscriber';
 import AuthContext from '../utils/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function Dashboard() {
-  const { authTokens } = useContext(AuthContext);
+  const { getAuthTokens } = useContext(AuthContext);
+  const tokens = getAuthTokens();
+  const navigate = useNavigate();
+  if (!tokens) navigate('/');
 
-  useSubscriber(`ws://localhost:8000/ws/chat?token=${authTokens?.access}`, (message) =>
+  useSubscriber(`ws://localhost:8000/ws/chat?token=${tokens.access}`, (message) =>
     console.log(message)
   );
 
@@ -17,8 +21,8 @@ function Dashboard() {
       style={{
         display: 'grid',
         gridTemplateColumns: '252px 1fr',
-        minWidth: '100vw',
-        minHeight: '100vh'
+        width: '100vw',
+        height: '100vh'
       }}>
       <Sidebar />
       <ActivityView />
