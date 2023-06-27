@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import AddIcon from '@mui/icons-material/Add';
 import Divider from '@mui/material/Divider';
 import GroupIcon from '@mui/icons-material/Group';
@@ -14,11 +15,15 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
 import useAxiosProtected from '../utils/useAxios';
-import { useEffect, useState } from 'react';
+import BaseFormDialog from './BaseFormDialog';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { Button, DialogActions, DialogContent, DialogContentText, TextField } from '@mui/material';
+import AuthContext from '../utils/AuthContext';
 
 function Sidebar() {
   const axios = useAxiosProtected();
   const [chatGroups, setChatGroups] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
   const navigate = useNavigate();
   const friendsText = 'Friends';
   const newChatGroupText = 'New Chat Group';
@@ -40,7 +45,7 @@ function Sidebar() {
       <Box style={{ padding: '0px 16px ' }}>
         <List>
           <ListItem key={friendsText} disablePadding>
-            <ListItemButton disableGutters key={friendsText} onClick={() => navigate('/dashboard')}>
+            <ListItemButton disableGutters onClick={() => navigate('/dashboard')}>
               <ListItemIcon>
                 <GroupIcon color="primary" />
               </ListItemIcon>
@@ -48,12 +53,15 @@ function Sidebar() {
             </ListItemButton>
           </ListItem>
           <ListItem key={newChatGroupText} disablePadding>
-            <ListItemButton disableGutters>
+            <ListItemButton
+              disableGutters
+              onClick={() => setOpenDialog((prevDialog) => !prevDialog)}>
               <ListItemIcon>
                 <AddIcon color="primary" />
               </ListItemIcon>
               <ListItemText primary={newChatGroupText} />
             </ListItemButton>
+            <NewChatGroupFormDialog open={openDialog} setOpen={setOpenDialog} />
           </ListItem>
         </List>
         <Divider />
@@ -93,5 +101,64 @@ function Sidebar() {
     </Box>
   );
 }
+
+function NewChatGroupFormDialog({ open, setOpen }) {
+  const axios = useAxiosProtected();
+  const { getUser } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const handleClose = useCallback((e) => {
+    e.preventDefault();
+    if (e.target.name) {
+      axios
+        .post('/api/chats/', { owner: getUser()?.user_id, name: e.target.name.value })
+        .then((response) => {
+          const id = response?.data['id'];
+          navigate(`/dashboard/chats/${id}`);
+        })
+        .catch(() => console.log('Unable to create a new chat group!'));
+    }
+    setOpen(false);
+  });
+
+  return (
+    <BaseFormDialog
+      open={open}
+      title={'Customize your new chat group'}
+      handleClose={handleClose}
+      component={
+        <form onSubmit={handleClose}>
+          <DialogContent>
+            <DialogContentText>
+              Give your chat group its own identity by giving it a name
+            </DialogContentText>
+            <TextField
+              autoFocus
+              margin="dense"
+              name="name"
+              label="Chat group name"
+              defaultValue="New Chat Group"
+              type="text"
+              fullWidth
+              variant="standard"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button variant="outlined" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" color="primary" variant="outlined">
+              Create
+            </Button>
+          </DialogActions>
+        </form>
+      }
+    />
+  );
+}
+
+NewChatGroupFormDialog.propTypes = {
+  open: PropTypes.bool.isRequired,
+  setOpen: PropTypes.func.isRequired
+};
 
 export default Sidebar;

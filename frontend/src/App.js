@@ -23,8 +23,7 @@ const theme = createTheme({
     secondary: {
       main: '#36393f'
     }
-  },
-  shadows: 'none'
+  }
 });
 
 function App() {
