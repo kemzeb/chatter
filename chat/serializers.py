@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from users.serializers import ChatterUserSerializer
 
-from .models import ChatGroup, ChatMessage
+from .models import ChatGroup, ChatGroupMembership, ChatMessage
 
 
 class ChatGroupSerializer(serializers.ModelSerializer):
@@ -24,11 +24,10 @@ class ChatGroupListSerializer(serializers.ModelSerializer):
 
 class ChatGroupDetailSerializer(serializers.ModelSerializer):
     owner = ChatterUserSerializer(read_only=True)
-    members = ChatterUserSerializer(many=True, read_only=True)
 
     class Meta:
         model = ChatGroup
-        fields = ["id", "owner", "members", "created"]
+        fields = ["id", "owner", "created"]
 
     def get_messages(self, obj):
         messages = obj.messages.all().order_by("created")
@@ -73,3 +72,11 @@ class ReadOnlyChatterUserSerializer(serializers.Serializer):
 class ChatGroupMemberSerializer(serializers.Serializer):
     chat_group = serializers.IntegerField()
     member = ReadOnlyChatterUserSerializer()
+
+
+class ListChatGroupMemberSerializer(serializers.ModelSerializer):
+    user = ReadOnlyChatterUserSerializer()
+
+    class Meta:
+        model = ChatGroupMembership
+        fields = ["user", "chat_group", "joined"]

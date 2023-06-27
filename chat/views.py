@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from chat import serializers
-from chat.models import ChatGroup, ChatMessage
+from chat.models import ChatGroup, ChatGroupMembership, ChatMessage
 from chatter.utils import LOOKUP_REGEX, publish_to_group, publish_to_user
 from users.models import ChatterUser
 
@@ -67,7 +67,6 @@ class ChatGroupMemberViewSet(ViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
-
         new_member_id = serializer.data["id"]
         new_member = get_object_or_404(ChatterUser.objects.all(), id=new_member_id)
         user = request.user
@@ -104,6 +103,20 @@ class ChatGroupMemberViewSet(ViewSet):
         )
 
         return Response(status=status.HTTP_201_CREATED, data=new_member_serializer.data)
+
+    def list(self, request, chat_id):
+        chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
+
+        if not chat_group.members.contains(request.user):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        serializer = serializers.ListChatGroupMemberSerializer(
+            ChatGroupMembership.objects.select_related("user").filter(
+                chat_group=chat_id
+            ),
+            many=True,
+        )
+        return Response(serializer.data)
 
     def destroy(self, request, chat_id=None, pk=None):
         if chat_id is None or pk is None:

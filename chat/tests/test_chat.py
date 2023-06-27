@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import DateTimeField
 from rest_framework.test import APIClient
 
+from chat import serializers
 from chat.models import ChatGroup, ChatMessage
 from chatter.asgi import application
 from chatter.utils import EventName, get_group_name
@@ -93,12 +94,6 @@ def test_retreive_chat_group(user_main):
     assert "id" in data
     assert data["owner"]["id"] == user_main.id
     assert data["owner"]["username"] == user_main.username
-
-    for member in data["members"]:
-        manager = chat_group.members.filter(id=member["id"])
-        assert manager.exists()
-        member_model = manager[0]
-        assert "username" in member and member["username"] == member_model.username
 
 
 @pytest.mark.django_db
@@ -205,6 +200,37 @@ class TestChatGroupMemberViewSet:
         assert msg["chat_group"] == chat_group.pk
         assert msg["member"]["id"] == user_drek.id
         assert msg["member"]["username"] == user_drek.username
+
+    async def test_list_existing_member(self, user_main):
+        client = APIClient()
+        client.force_authenticate(user_main)
+
+        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+        response = await database_sync_to_async(client.get)(
+            f"/api/chats/{chat_group.pk}/members/",
+        )
+
+        assert isinstance(response, Response)
+        assert response.status_code == status.HTTP_200_OK
+        response.render()
+        data = json.loads(response.content)
+        assert isinstance(data, list)
+        for member in data:
+            serializer = serializers.ListChatGroupMemberSerializer(data=member)
+            assert await database_sync_to_async(serializer.is_valid)()
+
+    @pytest.mark.usefixtures("user_main")
+    async def test_list_non_member(self, user_2):
+        client = APIClient()
+        client.force_authenticate(user_2)
+
+        chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+        response = await database_sync_to_async(client.get)(
+            f"/api/chats/{chat_group.pk}/members/",
+        )
+
+        assert isinstance(response, Response)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     async def test_destroy(
         self, user_main, user_drek, communicator_main, communicator_drek
