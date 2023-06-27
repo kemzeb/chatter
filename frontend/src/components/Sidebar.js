@@ -14,7 +14,7 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
-import useAxiosProtected from '../utils/useAxios';
+import useAxiosProtected from '../utils/useAxiosProtected';
 import BaseFormDialog from './BaseFormDialog';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { Button, DialogActions, DialogContent, DialogContentText, TextField } from '@mui/material';

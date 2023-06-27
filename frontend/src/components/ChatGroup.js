@@ -1,21 +1,30 @@
 import Box from '@mui/material/Box';
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import AuthContext from '../utils/AuthContext';
 import { List, ListItem, Typography, TextField } from '@mui/material';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Avatar from '@mui/material/Avatar';
-import { useNavigate } from 'react-router-dom';
-import { getExampleMessages, getExampleFriends } from '../utils/examples';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getExampleFriends } from '../utils/examples';
+import useAxiosProtected from '../utils/useAxiosProtected';
 
 function ChatGroup() {
   const { getUser } = useContext(AuthContext);
+  const [messages, setMessages] = useState([]);
+  const axios = useAxiosProtected();
   const navigate = useNavigate();
-  const messages = getExampleMessages();
+  const { id } = useParams();
   const members = getExampleFriends();
   const user = getUser();
 
   if (!user) navigate('/');
+
+  useEffect(() => {
+    axios.get(`/api/chats/${id}/messages/`).then((response) => {
+      setMessages(response.data);
+    });
+  }, [id]);
 
   return (
     <Box
@@ -33,7 +42,7 @@ function ChatGroup() {
             overscrollBehavior: 'contain'
           }}>
           {messages.map((msg) => {
-            const alignSelf = msg.user == user.user_id ? 'flex-end' : 'flex-start';
+            const alignSelf = msg.user.id == user.user_id ? 'flex-end' : 'flex-start';
             return (
               <ListItem
                 key={msg.id}
@@ -44,7 +53,7 @@ function ChatGroup() {
                   alignItems: alignSelf
                 }}>
                 <Typography fontSize={14} fontWeight={500}>
-                  {msg.username}
+                  {msg.user.username}
                 </Typography>
                 <Typography fontSize={14}>{msg.message}</Typography>
               </ListItem>

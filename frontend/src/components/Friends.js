@@ -10,11 +10,11 @@ import ListItemText from '@mui/material/ListItemText';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
-import useAxios from '../utils/useAxios';
+import useAxiosProtected from '../utils/useAxiosProtected';
 
 function Friends() {
   const [friendsList, setFriendsList] = useState([]);
-  const axios = useAxios();
+  const axios = useAxiosProtected();
 
   useEffect(() => {
     axios.get('/api/users/me/friends/').then((response) => {
