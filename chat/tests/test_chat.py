@@ -287,7 +287,8 @@ class TestChatMessageViewSet:
         assert event["event_type"] == str(EventName.GROUP_MESSAGE)
         msg = event["message"]
         assert type(msg) == dict
-        assert msg["user"] == user_main.id
+        assert msg["user"]["id"] == user_main.id
+        assert msg["user"]["username"] == user_main.username
         assert msg["chat_group"] == chat_group.pk
         assert msg["message"] == my_message
         assert "created" in msg
@@ -296,7 +297,8 @@ class TestChatMessageViewSet:
         assert event["event_type"] == str(EventName.GROUP_MESSAGE)
         msg = event["message"]
         assert type(msg) == dict
-        assert msg["user"] == user_main.id
+        assert msg["user"]["id"] == user_main.id
+        assert msg["user"]["username"] == user_main.username
         assert msg["chat_group"] == chat_group.pk
         assert msg["message"] == my_message
         assert "created" in msg
@@ -326,7 +328,8 @@ class TestChatMessageViewSet:
         assert event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
         msg = event["message"]
         assert type(msg) == dict
-        assert msg["user"] == user_main.id
+        assert msg["user"]["id"] == user_main.id
+        assert msg["user"]["username"] == user_main.username
         assert msg["chat_group"] == chat_group.pk
         assert msg["message"] == new_text
         assert "created" in msg
@@ -335,7 +338,8 @@ class TestChatMessageViewSet:
         assert event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
         msg = event["message"]
         assert type(msg) == dict
-        assert msg["user"] == user_main.id
+        assert msg["user"]["id"] == user_main.id
+        assert msg["user"]["username"] == user_main.username
         assert msg["chat_group"] == chat_group.pk
         assert msg["message"] == new_text
         assert "created" in msg
@@ -358,7 +362,8 @@ class TestChatMessageViewSet:
         for message in data:
             msg_obj = await ChatMessage.objects.aget(id=message["id"])
             assert message["id"] == msg_obj.pk
-            assert message["user"] == user_main.id
+            assert message["user"]["id"] == user_main.id
+            assert message["user"]["username"] == user_main.username
             assert message["message"] == msg_obj.message
             created = DateTimeField().to_representation(msg_obj.created)
             assert message["created"] == created

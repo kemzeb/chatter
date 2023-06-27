@@ -35,6 +35,8 @@ class ChatGroupDetailSerializer(serializers.ModelSerializer):
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
+    user = ChatterUserSerializer()
+
     class Meta:
         model = ChatMessage
         fields = ["id", "user", "chat_group", "message", "created"]
