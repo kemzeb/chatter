@@ -29,6 +29,7 @@
       "extensions": [
         "ms-python.python",
         "ms-python.isort",
+        "ms-python.black-formatter",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "tamasfe.even-better-toml" // Synatx highlighting for pyproject.toml.
