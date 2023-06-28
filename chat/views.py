@@ -209,9 +209,8 @@ class ChatMessageViewSet(ViewSet):
         if not chat_group.members.contains(request.user):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        serializer = serializers.ChatMessageSerializer(
-            ChatMessage.objects.filter(chat_group=chat_id), many=True
-        )
+        queryset = ChatMessage.objects.filter(chat_group=chat_id).order_by("created")
+        serializer = serializers.ChatMessageSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def destroy(self, request, chat_id=None, pk=None):

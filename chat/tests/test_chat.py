@@ -351,6 +351,9 @@ class TestChatMessageViewSet:
         chat_group = await ChatGroup.objects.aget(
             owner=user_main, name="Precursors rule"
         )
+        recent_message = await ChatMessage.objects.acreate(
+            user=user_main, chat_group=chat_group, message="A chat message"
+        )
         response = await database_sync_to_async(client.get)(
             f"/api/chats/{chat_group.pk}/messages/",
         )
@@ -358,7 +361,11 @@ class TestChatMessageViewSet:
         assert response.status_code == status.HTTP_200_OK
         response.render()
         data = json.loads(response.content)
-        assert isinstance(data, list)
+        assert isinstance(data, list) and len(data) == 3
+
+        # Make sure that the most recent message is at the bottom.
+        assert data[-1]["id"] == recent_message.pk
+
         for message in data:
             msg_obj = await ChatMessage.objects.aget(id=message["id"])
             assert message["id"] == msg_obj.pk
