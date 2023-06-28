@@ -12,9 +12,7 @@ function Dashboard() {
   const navigate = useNavigate();
   if (!tokens) navigate('/');
 
-  useSubscriber(`ws://localhost:8000/ws/chat?token=${tokens.access}`, (message) =>
-    console.log(message)
-  );
+  useSubscriber((message) => console.log(message));
 
   return (
     <Box
