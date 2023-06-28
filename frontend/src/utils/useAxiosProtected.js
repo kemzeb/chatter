@@ -65,7 +65,10 @@ function useAxiosProtected() {
               // Notify other pending requests of the valid access token.
               publishTokenRefresh(accessToken);
             })
-            .catch((error) => reject(error));
+            .catch((error) => reject(error))
+            .finally(() => {
+              isRefreshing = false;
+            });
         });
       }
 
