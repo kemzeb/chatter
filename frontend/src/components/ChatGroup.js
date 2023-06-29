@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import AuthContext from '../utils/AuthContext';
 import { List, ListItem, Typography, TextField } from '@mui/material';
 import ListItemText from '@mui/material/ListItemText';
@@ -12,10 +12,11 @@ function ChatGroup() {
   const { getUser } = useContext(AuthContext);
   const [messages, setMessages] = useState([]);
   const [chatMessage, setChatMessage] = useState('');
+  const [members, setMembers] = useState([]);
   const axios = useAxiosProtected();
   const navigate = useNavigate();
   const { id } = useParams();
-  const [members, setMembers] = useState([]);
+  const bottomScrollRef = useRef();
   const user = getUser();
 
   if (!user) navigate('/');
@@ -29,6 +30,8 @@ function ChatGroup() {
     }
   };
 
+  const scrollToBottom = () => bottomScrollRef.current.scrollIntoView({ behavior: 'auto' });
+
   useEffect(() => {
     axios.get(`/api/chats/${id}/messages/`).then((response) => {
       setMessages(response.data);
@@ -37,6 +40,10 @@ function ChatGroup() {
       setMembers(response.data);
     });
   }, [id]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   return (
     <Box
@@ -71,6 +78,7 @@ function ChatGroup() {
               </ListItem>
             );
           })}
+          <div ref={bottomScrollRef} />
         </List>
         <TextField
           size="small"
