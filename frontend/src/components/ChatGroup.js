@@ -7,6 +7,7 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Avatar from '@mui/material/Avatar';
 import { useNavigate, useParams } from 'react-router-dom';
 import useAxiosProtected from '../utils/useAxiosProtected';
+import { renderDateTime } from '../utils/utils';
 
 function ChatGroup() {
   const { getUser } = useContext(AuthContext);
@@ -71,9 +72,20 @@ function ChatGroup() {
                   flexDirection: 'column',
                   alignItems: alignSelf
                 }}>
-                <Typography fontSize={14} fontWeight={500}>
-                  {msg.user.username}
-                </Typography>
+                <Box
+                  style={{
+                    display: 'flex',
+                    gap: '4px',
+                    alignItems: 'center'
+                  }}>
+                  <Typography component="div" fontSize={14} fontWeight={700}>
+                    {msg.user.username}
+                  </Typography>
+                  <Typography component="div" fontSize={12} fontWeight={200}>
+                    {' '}
+                    {renderDateTime(msg.created)}
+                  </Typography>
+                </Box>
                 <Typography fontSize={14}>{msg.message}</Typography>
               </ListItem>
             );
