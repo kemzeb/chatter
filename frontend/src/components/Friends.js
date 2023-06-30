@@ -9,17 +9,21 @@ import Avatar from '@mui/material/Avatar';
 import ListItemText from '@mui/material/ListItemText';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { IconButton } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import useAxiosProtected from '../utils/useAxiosProtected';
+import useFriendsListStore from '../utils/useFriendsListStore';
 
 function Friends() {
-  const [friendsList, setFriendsList] = useState([]);
+  const friendsList = useFriendsListStore((state) => state.friendsList);
+  const setFriendsList = useFriendsListStore((state) => state.setFriendsList);
   const axios = useAxiosProtected();
 
   useEffect(() => {
-    axios.get('/api/users/me/friends/').then((response) => {
-      setFriendsList(response.data);
-    });
+    if (!friendsList) {
+      axios.get('/api/users/me/friends/').then((response) => {
+        setFriendsList(response.data);
+      });
+    }
   }, []);
 
   return (
@@ -34,7 +38,7 @@ function Friends() {
       <Typography style={{ marginBottom: '8px' }}>Friends</Typography>
       <Divider />
       <List style={{ maxHeight: '78vh', overflowY: 'auto', overscrollBehavior: 'contain' }}>
-        {friendsList.map((friend) => {
+        {friendsList?.map((friend) => {
           return (
             <ListItem key={friend.id} disableGutters divider>
               <ListItemAvatar>
