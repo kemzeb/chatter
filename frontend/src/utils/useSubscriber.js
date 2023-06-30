@@ -8,7 +8,7 @@ import jwtDecode from 'jwt-decode';
 // while other events are being processed. We should question if such a buffer is
 // scalable for a chat app.
 
-function useSubscriber(onMessage) {
+function useSubscriber(onEvent) {
   const { getAuthTokens, storeAuthTokens, logoutUser } = useContext(AuthContext);
   const tokens = getAuthTokens();
   const webSocket = useRef(null);
@@ -16,7 +16,7 @@ function useSubscriber(onMessage) {
   const navigate = useNavigate();
   const handleIncomingMessage = useCallback((message) => {
     const data = JSON.parse(message.data);
-    onMessage(data);
+    onEvent(data);
   });
 
   const setupConnection = useCallback((url) => {

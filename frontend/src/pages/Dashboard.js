@@ -1,18 +1,18 @@
 import Sidebar from '../components/Sidebar';
 import ActivityView from '../components/ActivityView';
 import Box from '@mui/material/Box';
-import { useContext } from 'react';
 import useSubscriber from '../utils/useSubscriber';
-import AuthContext from '../utils/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import useMessageStore from '../utils/useMessageStore';
 
 function Dashboard() {
-  const { getAuthTokens } = useContext(AuthContext);
-  const tokens = getAuthTokens();
-  const navigate = useNavigate();
-  if (!tokens) navigate('/');
+  const addMessageFromEvent = useMessageStore((state) => state.addMessageFromEvent);
 
-  useSubscriber((message) => console.log(message));
+  useSubscriber((event) => {
+    switch (event.event_type) {
+      case 'group:message':
+        addMessageFromEvent(event);
+    }
+  });
 
   return (
     <Box
