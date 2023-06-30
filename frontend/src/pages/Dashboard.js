@@ -5,12 +5,12 @@ import useSubscriber from '../utils/useSubscriber';
 import useMessageStore from '../utils/useMessageStore';
 
 function Dashboard() {
-  const addMessageFromEvent = useMessageStore((state) => state.addMessageFromEvent);
+  const addMessage = useMessageStore((state) => state.addMessage);
 
   useSubscriber((event) => {
     switch (event.event_type) {
       case 'group:message':
-        addMessageFromEvent(event);
+        addMessage(event.message);
     }
   });
 
