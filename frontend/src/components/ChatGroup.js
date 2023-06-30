@@ -9,6 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import useAxiosProtected from '../utils/useAxiosProtected';
 import { renderDateTime } from '../utils/utils';
 import useMessageStore from '../utils/useMessageStore';
+import useMembersStore from '../utils/useMembersStore';
 
 function ChatGroup() {
   const { getUser } = useContext(AuthContext);
@@ -17,7 +18,8 @@ function ChatGroup() {
   const messages = useMessageStore((state) => state.chatGroups[id]);
   const setMessageList = useMessageStore((state) => state.setMessageList);
   const [chatMessage, setChatMessage] = useState('');
-  const [members, setMembers] = useState([]);
+  const members = useMembersStore((state) => state.chatGroups[id]);
+  const setMembers = useMembersStore((state) => state.setMembers);
   const axios = useAxiosProtected();
   const bottomScrollRef = useRef();
   const user = getUser();
@@ -40,9 +42,11 @@ function ChatGroup() {
       axios.get(`/api/chats/${id}/messages/`).then((response) => setMessageList(id, response.data));
     }
 
-    axios.get(`/api/chats/${id}/members/`).then((response) => {
-      setMembers(response.data);
-    });
+    if (!members) {
+      axios.get(`/api/chats/${id}/members/`).then((response) => {
+        setMembers(id, response.data);
+      });
+    }
   }, [id]);
 
   useEffect(() => {
@@ -117,7 +121,7 @@ function ChatGroup() {
             overflow: 'auto',
             overscrollBehavior: 'contain'
           }}>
-          {members.map((member) => {
+          {members?.map((member) => {
             return (
               <ListItem key={member.user.id} disableGutters>
                 <ListItemAvatar>

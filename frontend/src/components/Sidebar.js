@@ -68,7 +68,7 @@ function Sidebar() {
           </ListItem>
         </List>
         <Divider />
-        <List style={{ maxHeight: '68vh', overflowY: 'auto', overscrollBehavior: 'contain' }}>
+        <List style={{ maxHeight: '80vh', overflowY: 'auto', overscrollBehavior: 'contain' }}>
           <ListItem key={-1} disablePadding>
             <ListItemText primaryTypographyProps={{ fontFamily: 'NotoSans' }}>
               CHAT GROUPS
