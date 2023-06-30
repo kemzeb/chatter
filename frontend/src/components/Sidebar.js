@@ -19,10 +19,13 @@ import BaseFormDialog from './BaseFormDialog';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { Button, DialogActions, DialogContent, DialogContentText, TextField } from '@mui/material';
 import AuthContext from '../utils/AuthContext';
+import useChatGroupStore from '../utils/useChatGroupStore';
 
 function Sidebar() {
   const axios = useAxiosProtected();
-  const [chatGroups, setChatGroups] = useState([]);
+  const chatGroups = useChatGroupStore((state) => state.chatGroups);
+  const setChatGroups = useChatGroupStore((state) => state.setChatGroups);
+
   const [openDialog, setOpenDialog] = useState(false);
   const navigate = useNavigate();
   const friendsText = 'Friends';
@@ -108,13 +111,18 @@ function NewChatGroupFormDialog({ open, setOpen }) {
   const axios = useAxiosProtected();
   const { getUser } = useContext(AuthContext);
   const navigate = useNavigate();
+  const addChatGroup = useChatGroupStore((state) => state.addChatGroup);
   const handleClose = useCallback((e) => {
     e.preventDefault();
     if (e.target.name) {
+      const name = e.target.name.value;
       axios
-        .post('/api/chats/', { owner: getUser()?.user_id, name: e.target.name.value })
+        .post('/api/chats/', { owner: getUser()?.user_id, name: name })
         .then((response) => {
           const id = response?.data['id'];
+          // FIXME: The backend should return the same object keys that are seen when
+          // fetching the chat group list!
+          addChatGroup({ id: id, name: name });
           navigate(`/dashboard/chats/${id}`);
         })
         .catch(() => console.log('Unable to create a new chat group!'));
