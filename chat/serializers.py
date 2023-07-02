@@ -29,10 +29,6 @@ class ChatGroupDetailSerializer(serializers.ModelSerializer):
         model = ChatGroup
         fields = ["id", "owner", "created"]
 
-    def get_messages(self, obj):
-        messages = obj.messages.all().order_by("created")
-        return ChatMessageSerializer(messages, many=True).data
-
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     user = ChatterUserSerializer()
