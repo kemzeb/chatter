@@ -57,24 +57,32 @@ async def communicator_main(user_main):
 
 
 @pytest.fixture
-def add_multiple_users():
-    ChatterUser.objects.create(username="luikangpang", password="clonewars")
-    ChatterUser.objects.create(username="paganmin", password="test")
-    ChatterUser.objects.create(username="pattycakepraxis", password="test")
-    ChatterUser.objects.create(username="pacman", password="test")
-    ChatterUser.objects.create(username="paynes_me_max", password="test")
+def add_multiple_users(user_main):
+    """Creates 16 users, 11 being friends of user_main"""
+    friends = [
+        {"username": "paganmin", "password": "test"},
+        {"username": "pacman", "password": "test"},
+        {"username": "paynes_me_max", "password": "test"},
+        {"username": "Paco", "password": "test"},
+        {"username": "spacehunter", "password": "test"},
+        {"username": "PackieMcReary", "password": "test"},
+        {"username": "pattycakepraxis", "password": "test"},
+        {"username": "parker_sector_rocks", "password": "test"},
+        {"username": "luikangpang", "password": "test"},
+        {"username": "CrateOs", "password": "clonewars"},
+        {"username": "you_rePRETTYgood", "password": "mgs"},
+    ]
+    for f in friends:
+        friend = ChatterUser.objects.create(
+            username=f["username"], password=f["password"]
+        )
+        user_main.friends.add(friend)
     ChatterUser.objects.create(username="parabellum", password="test")
-    ChatterUser.objects.create(username="Paco", password="test")
-    ChatterUser.objects.create(username="spacehunter", password="test")
-    ChatterUser.objects.create(username="PackieMcReary", password="test")
     ChatterUser.objects.create(username="pandora", password="test")
     ChatterUser.objects.create(username="eos", password="test")
-    ChatterUser.objects.create(username="parker", password="test")
     ChatterUser.objects.create(username="dust", password="test")
     ChatterUser.objects.create(username="badlands", password="test")
     ChatterUser.objects.create(username="oasis", password="test")
-    ChatterUser.objects.create(username="CrateOs", password="test")
-    ChatterUser.objects.create(username="you_rePRETTYgood", password="mgs")
 
 
 @pytest.fixture

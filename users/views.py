@@ -8,7 +8,7 @@ from rest_framework.viewsets import ViewSet
 from chatter.utils import LOOKUP_REGEX, publish_to_user
 from users import serializers
 from users.models import ChatterUser, FriendRequest
-from users.paginations import UserSearchPagination
+from users.paginations import FriendSearchPagination
 
 
 class RegisterView(CreateAPIView):
@@ -17,17 +17,15 @@ class RegisterView(CreateAPIView):
     serializer_class = serializers.RegisterSerializer
 
 
-class UserSearchView(ListAPIView):
+class FriendSearchView(ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = serializers.ChatterUserSerializer
-    pagination_class = UserSearchPagination
+    pagination_class = FriendSearchPagination
 
     def get_queryset(self):
-        queryset = ChatterUser.objects.all()
         q = self.request.query_params.get("q")
-        queryset = queryset.filter(username__contains=q).exclude(
-            id=self.request.user.pk
-        )
+        user = self.request.user
+        queryset = user.friends.filter(username__icontains=q)
         return queryset
 
 

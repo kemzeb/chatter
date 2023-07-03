@@ -12,17 +12,16 @@ from users.models import FriendRequest
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("add_multiple_users")
-def test_user_search_view(user_main):
+def test_friends_search_view(user_main):
     client = APIClient()
     client.force_authenticate(user_main)
 
-    response = client.get("/search/", {"q": "pa"})
+    response = client.get("/api/users/me/friends/search/", {"q": "pa"})
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_200_OK
 
     response.render()
     data = json.loads(response.content)
-    assert "results" in data
     assert len(data["results"]) == 8
 
 

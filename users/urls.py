@@ -2,7 +2,12 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from users.views import FriendRequestViewSet, FriendsViewSet, RegisterView
+from users.views import (
+    FriendRequestViewSet,
+    FriendSearchView,
+    FriendsViewSet,
+    RegisterView,
+)
 
 auth_urlpatterns = [
     path("login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
@@ -20,5 +25,8 @@ router.register(r"friends", FriendsViewSet, basename="friends")
 
 urlpatterns = [
     path("auth/", include(auth_urlpatterns)),
-    path("me/", include(router.urls)),
+    path(
+        "me/",
+        include(router.urls + [path("friends/search/", FriendSearchView.as_view())]),
+    ),
 ]
