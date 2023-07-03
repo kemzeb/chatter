@@ -38,6 +38,12 @@ class ChatConsumer(JsonWebsocketConsumer):
             group_name = get_group_name(chat_group.pk)
             self._group_discard(group_name)
 
+    def handle_create_chat_group(self, event):
+        chat_group_id = event["id"]
+        new_group = get_group_name(chat_group_id)
+        self._group_add(new_group)
+        self.send_event_to_client(EventName.GROUP_CREATE, event)
+
     def handle_destroy_chat_group(self, event):
         chat_group_id = event["id"]
         group_name = get_group_name(chat_group_id)
@@ -79,11 +85,11 @@ class ChatConsumer(JsonWebsocketConsumer):
         """Handles an event sent from `destroy()` in `ChatGroupMemberViewSet`."""
         self.send_event_to_client(EventName.GROUP_REMOVE, event)
 
-    def send_event_to_client(self, event_type: EventName, message):
-        if "type" in message:
-            del message["type"]
+    def send_event_to_client(self, event_type: EventName, event):
+        if "type" in event:
+            del event["type"]
 
-        self.send_json({"event_type": event_type.value, "message": message})
+        self.send_json({"event_type": event_type.value, "message": event})
 
     def _group_add(self, group_name: str) -> None:
         async_to_sync(self.channel_layer.group_add)(group_name, self.channel_name)

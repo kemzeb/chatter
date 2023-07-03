@@ -55,26 +55,35 @@ class TestChatConsumer:
         await communicator_main_without_handling.disconnect()
 
 
-@pytest.mark.django_db
-def test_create_chat_group(user_main):
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_create_chat_group(user_main, communicator_main):
     client = APIClient()
     client.force_authenticate(user_main)
     name = "Lo Wang Fan Club"
-    response = client.post("/api/chats/", {"owner": user_main.id, "name": name})
+    response = await database_sync_to_async(client.post)(
+        "/api/chats/", {"owner": user_main.id, "name": name}
+    )
 
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_201_CREATED
 
-    manager = ChatGroup.objects.filter(name=name)
-    assert manager.exists()
-    chat_group = manager[0]
+    chat_group = await ChatGroup.objects.aget(name=name)
     assert (
-        chat_group.members.count() == 1
+        await chat_group.members.acount() == 1
     ), "Owner should also be a member of their chat group."
 
     response.render()
     content = json.loads(response.content)
     assert content["id"] == chat_group.pk
+
+    event = await communicator_main.receive_json_from()
+    msg = event["message"]
+    assert event["event_type"] == "group:create"
+    assert msg["id"] == chat_group.pk
+    assert msg["owner"]["username"] == user_main.username
+    assert msg["owner"]["id"] == user_main.id
+    assert "created" in msg
 
 
 @pytest.mark.django_db

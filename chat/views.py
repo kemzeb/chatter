@@ -18,6 +18,8 @@ class ChatGroupViewSet(ViewSet):
         if serializer.is_valid():
             chat_group = serializer.save()
             chat_group.members.add(request.user)
+            serializer = serializers.ChatGroupDetailSerializer(chat_group)
+            publish_to_user(request.user, serializer.data, "handle_create_chat_group")
             return Response(status=status.HTTP_201_CREATED, data={"id": chat_group.pk})
 
         return Response(status=status.HTTP_400_BAD_REQUEST)
