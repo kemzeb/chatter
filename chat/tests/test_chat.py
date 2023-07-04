@@ -76,14 +76,13 @@ async def test_create_chat_group(user_main, communicator_main):
     response.render()
     content = json.loads(response.content)
     assert content["id"] == chat_group.pk
+    serializer = serializers.ChatGroupDetailSerializer(data=content)
+    assert serializer.is_valid()
 
     event = await communicator_main.receive_json_from()
     msg = event["message"]
     assert event["event_type"] == "group:create"
     assert msg["id"] == chat_group.pk
-    assert msg["owner"]["username"] == user_main.username
-    assert msg["owner"]["id"] == user_main.id
-    assert "created" in msg
 
 
 @pytest.mark.django_db
