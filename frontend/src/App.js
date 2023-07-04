@@ -9,6 +9,7 @@ import RequireAuth from './utils/RequireAuth';
 import NotFound from './pages/NotFound';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import PendingFriends from './components/PendingFriends';
 
 const theme = createTheme({
   typography: {
@@ -43,6 +44,7 @@ function App() {
             }>
             <Route index element={<Friends />} />
             <Route path="chats/:id" element={<ChatGroup />} />
+            <Route path="pending" element={<PendingFriends />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
