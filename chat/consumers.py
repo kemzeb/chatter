@@ -42,7 +42,6 @@ class ChatConsumer(JsonWebsocketConsumer):
         chat_group_id = event["id"]
         new_group = get_group_name(chat_group_id)
         self._group_add(new_group)
-        self.send_event_to_client(EventName.GROUP_CREATE, event)
 
     def handle_destroy_chat_group(self, event):
         chat_group_id = event["id"]

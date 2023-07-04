@@ -79,10 +79,19 @@ async def test_create_chat_group(user_main, communicator_main):
     serializer = serializers.ChatGroupDetailSerializer(data=content)
     assert serializer.is_valid()
 
+    # Make sure we have created a Channels Group by creating a chat message.
+    my_message = "Who were they again??"
+    response = await database_sync_to_async(client.post)(
+        f"/api/chats/{chat_group.pk}/messages/",
+        {
+            "message": my_message,
+        },
+    )
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_201_CREATED
+
     event = await communicator_main.receive_json_from()
-    msg = event["message"]
-    assert event["event_type"] == "group:create"
-    assert msg["id"] == chat_group.pk
+    assert event["event_type"] == EventName.GROUP_MESSAGE
 
 
 @pytest.mark.django_db

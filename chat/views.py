@@ -23,7 +23,6 @@ class ChatGroupViewSet(ViewSet):
                 request.user, {"id": chat_group.pk}, "handle_create_chat_group"
             )
             return Response(status=status.HTTP_201_CREATED, data=serializer.data)
-
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
