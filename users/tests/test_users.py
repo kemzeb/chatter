@@ -72,14 +72,12 @@ def test_list_friends_view(user_main):
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_create_friend_request(
-    user_main, user_drek, communicator_main, communicator_drek
-):
+async def test_create_friend_request(user_main, user_drek, communicator_drek):
     client = APIClient()
     client.force_authenticate(user_main)
 
     response = await database_sync_to_async(client.post)(
-        "/api/users/me/friendrequests/", {"addressee": user_drek.id}
+        "/api/users/me/friendrequests/", {"username": user_drek.username}
     )
     assert isinstance(response, Response)
     assert response.status_code == status.HTTP_201_CREATED

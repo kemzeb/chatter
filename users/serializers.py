@@ -1,12 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
 
 from users import models
 
 
 # https://stackoverflow.com/questions/16857450/how-to-register-users-in-django-rest-framework
-class RegisterSerializer(ModelSerializer):
+class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = [
@@ -29,13 +29,13 @@ class RegisterSerializer(ModelSerializer):
         return user
 
 
-class ChatterUserSerializer(ModelSerializer):
+class ChatterUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ["id", "username"]
 
 
-class FriendRequestSerializer(ModelSerializer):
+class FriendRequestSerializer(serializers.ModelSerializer):
     """
     Exists only for serializing `FriendRequest` objects.
     """
@@ -49,17 +49,16 @@ class FriendRequestSerializer(ModelSerializer):
         read_only_fields = [*fields]
 
 
-class CreateFriendRequestSerializer(ModelSerializer):
+class CreateFriendRequestSerializer(serializers.Serializer):
     """
     Validates user input for `create()` within `users.views.FriendRequestViewSet`.
     """
 
-    class Meta:
-        model = models.FriendRequest
-        fields = ["addressee"]
+    # https://docs.djangoproject.com/en/4.2/ref/contrib/auth/#django.contrib.auth.models.User.username
+    username = serializers.CharField(max_length=150)
 
 
-class DestroyFriendRequestSerializer(ModelSerializer):
+class DestroyFriendRequestSerializer(serializers.ModelSerializer):
     """
     Used for serialization for `destroy()` within `users.views.FriendRequestViewSet`.
     """
@@ -74,7 +73,7 @@ class DestroyFriendRequestSerializer(ModelSerializer):
         write_only_fields = ["id"]
 
 
-class ListFriendRequestSerializer(ModelSerializer):
+class ListFriendRequestSerializer(serializers.ModelSerializer):
     """
     Exists only for `FriendRequest` serialization in `list()` within
     `users.views.FriendRequestViewSet`.

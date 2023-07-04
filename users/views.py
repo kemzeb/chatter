@@ -65,18 +65,16 @@ class FriendRequestViewSet(ViewSet):
         if not serializer.is_valid():
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        addressee_id = serializer.data["addressee"]
+        pending_username = serializer.data["username"]
         user = request.user
-
-        if user.id == addressee_id:
+        if user.username == pending_username:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        user_manager = ChatterUser.objects.filter(id=addressee_id)
+        user_manager = ChatterUser.objects.filter(username=pending_username)
         if not user_manager.exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
         addressee = user_manager[0]
-
         addressee_has_sent_friend_request = FriendRequest.objects.filter(
             requester=addressee, addressee=user
         ).exists()
@@ -96,7 +94,6 @@ class FriendRequestViewSet(ViewSet):
         else:
             serializer = serializers.FriendRequestSerializer(friend_request)
             publish_to_user(addressee, serializer.data, "handle_create_friend_request")
-
             return Response(
                 status=status.HTTP_201_CREATED, data={"id": friend_request.pk}
             )
