@@ -120,6 +120,8 @@ class FriendRequestViewSet(ViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         requester = friend_request.requester
+        serializer = serializers.DestroyFriendRequestSerializer(friend_request)
+        data = serializer.data
         friend_request.delete()
 
         handler = "handle_accept_friend_request"
@@ -128,10 +130,8 @@ class FriendRequestViewSet(ViewSet):
         else:
             handler = "handle_reject_friend_request"
 
-        serializer = serializers.DestroyFriendRequestSerializer(friend_request)
-        publish_to_user(requester, serializer.data, handler)
-        publish_to_user(user, serializer.data, handler)
-
+        publish_to_user(requester, data, handler)
+        publish_to_user(user, data, handler)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def list(self, request):

@@ -68,9 +68,8 @@ class DestroyFriendRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.FriendRequest
-        fields = ["requester", "addressee"]
+        fields = ["id", "requester", "addressee"]
         read_only_fields = ["requester", "addressee"]
-        write_only_fields = ["id"]
 
 
 class ListFriendRequestSerializer(serializers.ModelSerializer):

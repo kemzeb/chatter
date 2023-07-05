@@ -119,6 +119,7 @@ async def test_accept_friend_request(
     event = await communicator_drek.receive_json_from()
     assert event["event_type"] == str(EventName.USER_ACCEPT_FRIEND_REQUEST)
     msg = event["message"]
+    assert "id" in msg
     assert msg["requester"]["id"] == user_drek.id
     assert msg["requester"]["username"] == user_drek.username
     assert msg["addressee"]["id"] == user_main.id
@@ -127,6 +128,7 @@ async def test_accept_friend_request(
     event = await communicator_main.receive_json_from()
     assert event["event_type"] == str(EventName.USER_ACCEPT_FRIEND_REQUEST)
     msg = event["message"]
+    assert "id" in msg
     assert msg["requester"]["id"] == user_drek.id
     assert msg["requester"]["username"] == user_drek.username
     assert msg["addressee"]["id"] == user_main.id
@@ -156,6 +158,7 @@ async def test_reject_friend_request(
     event = await communicator_drek.receive_json_from()
     assert event["event_type"] == str(EventName.USER_REJECT_FRIEND_REQUEST)
     msg = event["message"]
+    assert "id" in msg
     assert msg["requester"]["id"] == user_drek.id
     assert msg["requester"]["username"] == user_drek.username
     assert msg["addressee"]["id"] == user_main.id
@@ -164,6 +167,7 @@ async def test_reject_friend_request(
     event = await communicator_main.receive_json_from()
     assert event["event_type"] == str(EventName.USER_REJECT_FRIEND_REQUEST)
     msg = event["message"]
+    assert "id" in msg
     assert msg["requester"]["id"] == user_drek.id
     assert msg["requester"]["username"] == user_drek.username
     assert msg["addressee"]["id"] == user_main.id
