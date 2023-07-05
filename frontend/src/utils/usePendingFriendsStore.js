@@ -8,9 +8,15 @@ const usePendingFriendsStore = create((set, get) => ({
     }));
   },
   addPendingFriend: ({ id, requester }) => {
-    const friend = { id: id, requester: requester };
+    if (!get().pendingFriends) return;
+    const pending = { id: id, requester: requester };
     set((state) => ({
-      pendingFriends: [...state.pendingFriends, friend]
+      pendingFriends: [...state.pendingFriends, pending]
+    }));
+  },
+  removePendingFriend: (id) => {
+    set((state) => ({
+      pendingFriends: state.pendingFriends.filter((pending) => pending.id !== id)
     }));
   }
 }));

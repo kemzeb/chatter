@@ -7,9 +7,10 @@ const useFriendsListStore = create((set, get) => ({
       friendsList: [...list]
     }));
   },
-  addFriend: (friend) => {
+  addFriend: ({ id, username }) => {
+    if (!get().friendsList) return;
     set((state) => ({
-      friendsList: [...state.friendsList, friend]
+      friendsList: [...state.friendsList, { id: id, username: username }]
     }));
   }
 }));
