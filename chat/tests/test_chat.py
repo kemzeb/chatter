@@ -108,7 +108,8 @@ def test_retreive_chat_group(user_main):
     response.render()
     data = json.loads(response.content)
     assert type(data) == dict
-    assert "id" in data
+    assert data["id"] == chat_group.pk
+    assert data["name"] == chat_group.name
     assert data["owner"]["id"] == user_main.id
     assert data["owner"]["username"] == user_main.username
 

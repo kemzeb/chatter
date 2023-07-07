@@ -27,7 +27,7 @@ class ChatGroupDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatGroup
-        fields = ["id", "owner", "created"]
+        fields = ["id", "name", "owner", "created"]
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
