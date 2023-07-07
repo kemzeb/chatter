@@ -25,11 +25,16 @@ function Sidebar() {
   const axios = useAxiosProtected();
   const chatGroups = useChatGroupStore((state) => state.chatGroups);
   const setChatGroups = useChatGroupStore((state) => state.setChatGroups);
-
   const [openDialog, setOpenDialog] = useState(false);
+  const [prevClickedGroup, setPrevClickedGroup] = useState(-1);
   const navigate = useNavigate();
   const friendsText = 'Friends';
   const newChatGroupText = 'New Chat Group';
+
+  const handleOnChatGroupClick = useCallback((groupId) => {
+    setPrevClickedGroup(groupId);
+    navigate(`/dashboard/chats/${groupId}`);
+  });
 
   useEffect(() => {
     axios.get('/api/chats/').then((response) => {
@@ -78,8 +83,11 @@ function Sidebar() {
             return (
               <ListItem key={group.id} disablePadding>
                 <ListItemButton
-                  disableGutters
-                  onClick={() => navigate(`/dashboard/chats/${group.id}`)}>
+                  sx={{
+                    bgcolor: prevClickedGroup === group.id ? 'secondary.dark' : 'secondary.main',
+                    paddingLeft: '8px'
+                  }}
+                  onClick={() => handleOnChatGroupClick(group.id)}>
                   <ListItemAvatar>
                     <Avatar>{group.name[0]}</Avatar>
                   </ListItemAvatar>
