@@ -29,10 +29,12 @@ function Dashboard() {
         removePendingFriend(message.id);
         break;
       case 'user:accept':
-        removePendingFriend(message.id);
-        user.id === message.requester.id
-          ? addFriend(message.addressee)
-          : addFriend(message.requester);
+        if (user.user_id === message.requester.id) {
+          addFriend(message.addressee);
+        } else {
+          removePendingFriend(message.id);
+          addFriend(message.requester);
+        }
         break;
     }
   });
