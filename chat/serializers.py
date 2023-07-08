@@ -67,12 +67,7 @@ class ReadOnlyChatterUserSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=1800, required=False)
 
 
-class ChatGroupMemberSerializer(serializers.Serializer):
-    chat_group = serializers.IntegerField()
-    member = ReadOnlyChatterUserSerializer()
-
-
-class ListChatGroupMemberSerializer(serializers.ModelSerializer):
+class ChatGroupMemberSerializer(serializers.ModelSerializer):
     user = ReadOnlyChatterUserSerializer()
 
     class Meta:

@@ -10,7 +10,7 @@ from rest_framework.serializers import DateTimeField
 from rest_framework.test import APIClient
 
 from chat import serializers
-from chat.models import ChatGroup, ChatMessage
+from chat.models import ChatGroup, ChatGroupMembership, ChatMessage
 from chatter.asgi import application
 from chatter.utils import EventName, get_group_name
 
@@ -193,7 +193,6 @@ class TestChatGroupMemberViewSet:
     ):
         client = APIClient()
         client.force_authenticate(user_main)
-
         chat_group = await ChatGroup.objects.aget(
             owner=user_main, name="The Glory Of Panau"
         )
@@ -204,20 +203,24 @@ class TestChatGroupMemberViewSet:
 
         assert isinstance(response, Response)
         assert response.status_code == status.HTTP_201_CREATED
+        member = await database_sync_to_async(ChatGroupMembership.objects.filter)(
+            chat_group=chat_group.pk, user=user_drek.id
+        )
+        assert await member.aexists()
 
         event = await communicator_main.receive_json_from()
         assert event["event_type"] == str(EventName.GROUP_ADD)
         msg = event["message"]
         assert msg["chat_group"] == chat_group.pk
-        assert msg["member"]["id"] == user_drek.id
-        assert msg["member"]["username"] == user_drek.username
+        assert msg["user"]["id"] == user_drek.id
+        assert msg["user"]["username"] == user_drek.username
 
         event = await communicator_drek.receive_json_from()
         assert event["event_type"] == str(EventName.GROUP_ADD)
         msg = event["message"]
         assert msg["chat_group"] == chat_group.pk
-        assert msg["member"]["id"] == user_drek.id
-        assert msg["member"]["username"] == user_drek.username
+        assert msg["user"]["id"] == user_drek.id
+        assert msg["user"]["username"] == user_drek.username
 
     async def test_list_existing_member(self, user_main):
         client = APIClient()
@@ -234,7 +237,7 @@ class TestChatGroupMemberViewSet:
         data = json.loads(response.content)
         assert isinstance(data, list)
         for member in data:
-            serializer = serializers.ListChatGroupMemberSerializer(data=member)
+            serializer = serializers.ChatGroupMemberSerializer(data=member)
             assert await database_sync_to_async(serializer.is_valid)()
 
     @pytest.mark.usefixtures("user_main")
@@ -271,15 +274,15 @@ class TestChatGroupMemberViewSet:
         assert event["event_type"] == str(EventName.GROUP_REMOVE)
         msg = event["message"]
         assert msg["chat_group"] == chat_group.pk
-        assert msg["member"]["id"] == user_drek.id
-        assert msg["member"]["username"] == user_drek.username
+        assert msg["user"]["id"] == user_drek.id
+        assert msg["user"]["username"] == user_drek.username
 
         event = await communicator_drek.receive_json_from()
         assert event["event_type"] == str(EventName.GROUP_REMOVE)
         msg = event["message"]
         assert msg["chat_group"] == chat_group.pk
-        assert msg["member"]["id"] == user_drek.id
-        assert msg["member"]["username"] == user_drek.username
+        assert msg["user"]["id"] == user_drek.id
+        assert msg["user"]["username"] == user_drek.username
 
 
 @pytest.mark.django_db(transaction=True)

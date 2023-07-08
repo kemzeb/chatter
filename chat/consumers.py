@@ -73,7 +73,7 @@ class ChatConsumer(JsonWebsocketConsumer):
     def handle_create_group_member(self, event):
         """Handles an event sent from `create()` in `ChatGroupMemberViewSet`."""
         chat_group_id = event["chat_group"]
-        new_member_id = event["member"]["id"]
+        new_member_id = event["user"]["id"]
         user_id = self.scope["user"].id
         if new_member_id == user_id:
             group_name = get_group_name(chat_group_id)

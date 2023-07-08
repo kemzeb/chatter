@@ -65,14 +65,16 @@ class ChatGroupMemberViewSet(ViewSet):
         serializer = serializers.ReadOnlyChatterUserSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(status=status.HTTP_400_BAD_REQUEST)
-
         if not chat_id:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
+        user = request.user
+        if chat_group.owner != user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         new_member_id = serializer.data["id"]
         new_member = get_object_or_404(ChatterUser.objects.all(), id=new_member_id)
-        user = request.user
         has_friendship_with_user = new_member.friends.contains(user)
         if not has_friendship_with_user:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -81,31 +83,20 @@ class ChatGroupMemberViewSet(ViewSet):
         if is_already_a_member:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        if chat_group.owner != user:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-        chat_group.members.add(new_member)
-
-        new_member_data = {
-            "chat_group": chat_group.pk,
-            "member": {"id": new_member.pk, "username": new_member.username},
-        }
-        new_member_serializer = serializers.ChatGroupMemberSerializer(
-            data=new_member_data
+        membership = ChatGroupMembership.objects.create(
+            chat_group=chat_group, user=new_member
         )
-        if not new_member_serializer.is_valid():
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        serializer = serializers.ChatGroupMemberSerializer(membership)
+        data = serializer.data
         publish_to_user(
             new_member,
-            new_member_serializer.data,
+            data,
             "handle_create_group_member",
         )
-        publish_to_group(
-            chat_group, new_member_serializer.data, "handle_create_group_member"
-        )
+        publish_to_group(chat_group, data, "handle_create_group_member")
 
-        return Response(status=status.HTTP_201_CREATED, data=new_member_serializer.data)
+        return Response(status=status.HTTP_201_CREATED, data=data)
 
     def list(self, request, chat_id):
         chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
@@ -113,7 +104,7 @@ class ChatGroupMemberViewSet(ViewSet):
         if not chat_group.members.contains(request.user):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        serializer = serializers.ListChatGroupMemberSerializer(
+        serializer = serializers.ChatGroupMemberSerializer(
             ChatGroupMembership.objects.select_related("user").filter(
                 chat_group=chat_id
             ),
@@ -125,30 +116,20 @@ class ChatGroupMemberViewSet(ViewSet):
         if chat_id is None or pk is None:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
+        membership = get_object_or_404(
+            ChatGroupMembership.objects.select_related("chat_group__owner"),
+            chat_group=chat_id,
+            user=pk,
+        )
         user = request.user
-        if user != chat_group.owner:
+        if user != membership.chat_group.owner:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        member = get_object_or_404(ChatterUser.objects.all(), id=pk)
-        if not chat_group.members.contains(member):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        serializer = serializers.ChatGroupMemberSerializer(membership)
+        data = serializer.data
+        membership.delete()
 
-        chat_group.members.remove(member)
-
-        deleted_member_data = {
-            "chat_group": chat_group.pk,
-            "member": {"id": member.pk, "username": member.username},
-        }
-        deleted_member_serializer = serializers.ChatGroupMemberSerializer(
-            data=deleted_member_data
-        )
-        if not deleted_member_serializer.is_valid():
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        publish_to_group(
-            chat_group, deleted_member_serializer.data, "handle_destroy_group_member"
-        )
+        publish_to_group(chat_id, data, "handle_destroy_group_member")
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
