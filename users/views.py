@@ -1,6 +1,7 @@
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
@@ -24,6 +25,8 @@ class FriendSearchView(ListAPIView):
 
     def get_queryset(self):
         q = self.request.query_params.get("q")
+        if q is None:
+            raise ValidationError(detail="Invalid query string given")
         user = self.request.user
         queryset = user.friends.filter(username__icontains=q)
         return queryset

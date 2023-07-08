@@ -25,6 +25,16 @@ def test_friends_search_view(user_main):
     assert len(data["results"]) == 8
 
 
+@pytest.mark.django_db
+def test_friends_search_view_with_no_query_str_given(user_main):
+    client = APIClient()
+    client.force_authenticate(user_main)
+
+    response = client.get("/api/users/me/friends/search/")
+    assert isinstance(response, Response)
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_delete_friend_view(
