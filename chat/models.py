@@ -28,14 +28,3 @@ class ChatMessage(models.Model):
     )
     message = models.CharField(max_length=1800)
     created = models.DateTimeField(default=now)
-
-
-class ChatGroupInvite(models.Model):
-    from_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="from_user"
-    )
-    to_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="to_user"
-    )
-    chat_group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE)
-    date_invited = models.DateField(auto_now_add=True)
