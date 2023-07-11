@@ -58,10 +58,7 @@ def get_channel_group_name(unqiue_id) -> str:
 class EventName(enum.StrEnum):
     """Represents WebSocket event names that are sent to the client."""
 
-    GROUP_CONNECT = "group:connect"
-    GROUP_CREATE = "group:create"
     GROUP_DESTROY = "group:destroy"
-    GROUP_FETCH = "group:fetch"
     GROUP_MESSAGE = "group:message"
     GROUP_MESSAGE_UPDATE = "group:message_update"
     GROUP_MESSAGE_DELETE = "group:message_delete"
