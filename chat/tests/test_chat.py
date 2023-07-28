@@ -222,11 +222,12 @@ class TestChatGroupMemberViewSet:
         assert msg["user"]["id"] == user_drek.id
         assert msg["user"]["username"] == user_drek.username
 
-    async def test_list_existing_member(self, user_main):
+    async def test_list_ensure_sorted_ascending_and_valid(self, user_main, user_drek):
         client = APIClient()
         client.force_authenticate(user_main)
 
         chat_group = await ChatGroup.objects.aget(name="Precursors rule")
+
         response = await database_sync_to_async(client.get)(
             f"/api/chats/{chat_group.pk}/members/",
         )
@@ -236,6 +237,10 @@ class TestChatGroupMemberViewSet:
         response.render()
         data = json.loads(response.content)
         assert isinstance(data, list)
+
+        assert len(data) > 0
+        assert data[0]["user"]["id"] == user_drek.id
+
         for member in data:
             serializer = serializers.ChatGroupMemberSerializer(data=member)
             assert await database_sync_to_async(serializer.is_valid)()

@@ -100,14 +100,13 @@ class ChatGroupMemberViewSet(ViewSet):
 
     def list(self, request, chat_id):
         chat_group = get_object_or_404(ChatGroup.objects.all(), pk=chat_id)
-
         if not chat_group.members.contains(request.user):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         serializer = serializers.ChatGroupMemberSerializer(
-            ChatGroupMembership.objects.select_related("user").filter(
-                chat_group=chat_id
-            ),
+            ChatGroupMembership.objects.select_related("user")
+            .filter(chat_group=chat_id)
+            .order_by("user__username"),
             many=True,
         )
         return Response(serializer.data)
