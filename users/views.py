@@ -54,8 +54,9 @@ class FriendsViewSet(ViewSet):
 
     def list(self, request):
         user = request.user
-        serializer = serializers.ChatterUserSerializer(user.friends.all(), many=True)
-
+        serializer = serializers.ChatterUserSerializer(
+            user.friends.order_by("username"), many=True
+        )
         return Response(serializer.data)
 
 

@@ -15,15 +15,16 @@ def user_main():
     user1 = ChatterUser.objects.create(
         username="qwarkinator", email="qwark@example.com", password="fight_crime!12"
     )
-    user1.friends.create(
-        username="praxis",
-        email="praxis@havencity.org",
-        password="giveUpyour13FreeDOM",
-    )
+
     user1.friends.create(
         username="voxx",
         email="voxx@dreadzone.com",
         password="kajsdfjal23542Aw",
+    )
+    user1.friends.create(
+        username="praxis",
+        email="praxis@havencity.org",
+        password="giveUpyour13FreeDOM",
     )
 
     ChatterUser.objects.create(

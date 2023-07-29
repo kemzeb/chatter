@@ -66,7 +66,7 @@ async def test_delete_friend_view(
 
 
 @pytest.mark.django_db
-def test_list_friends_view(user_main):
+def test_list_friends_view_is_valid_and_sorted(user_main):
     client = APIClient()
     client.force_authenticate(user_main)
 
@@ -78,6 +78,8 @@ def test_list_friends_view(user_main):
     data = json.loads(response.content)
     assert type(data) == list
     assert len(data) == 2
+
+    assert data[0]["username"] == "praxis"
 
 
 @pytest.mark.django_db(transaction=True)
