@@ -21,11 +21,12 @@ A hobby real-time chatting web application.
 
 ## Usage
 
-Setup the development environment by hopping on to VSCode and taking advantage of the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
+Setup the development environment by hopping on VSCode and taking advantage of the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
 When you made it into the development container, do the following:
 
-1. Apply Django-related migrations to setup the database: `python manage.py migrate`.
-2. Bundle JavaScript files by doing the following:
+1. Add a `.env` file and include the following: `SECRET_KEY=dev` (we don't care what the value is since we are in a development environment)
+2. Apply Django-related migrations to setup the database: `python manage.py migrate`.
+3. Bundle JavaScript files by doing the following:
 
 ```console
 # Assuming your at the project root directory
