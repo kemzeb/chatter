@@ -107,7 +107,7 @@ def test_retreive_chat_group(user_main):
 
     response.render()
     data = json.loads(response.content)
-    assert type(data) == dict
+    assert isinstance(data, dict)
     assert data["id"] == chat_group.pk
     assert data["name"] == chat_group.name
     assert data["owner"]["id"] == user_main.id
@@ -126,7 +126,7 @@ def test_list_chat_group(user_drek, user_main):
 
     response.render()
     data = json.loads(response.content)
-    assert type(data) == list
+    assert isinstance(data, list)
     assert len(data) == 1
     assert "id" in data[0]
     assert data[0]["name"] == "Precursors rule"
@@ -312,7 +312,7 @@ class TestChatMessageViewSet:
         event = await communicator_main.receive_json_from()
         assert event["event_type"] == str(EventName.GROUP_MESSAGE)
         msg = event["message"]
-        assert type(msg) == dict
+        assert isinstance(msg, dict)
         assert msg["user"]["id"] == user_main.id
         assert msg["user"]["username"] == user_main.username
         assert msg["chat_group"] == chat_group.pk
@@ -322,7 +322,7 @@ class TestChatMessageViewSet:
         event = await communicator_drek.receive_json_from()
         assert event["event_type"] == str(EventName.GROUP_MESSAGE)
         msg = event["message"]
-        assert type(msg) == dict
+        assert isinstance(msg, dict)
         assert msg["user"]["id"] == user_main.id
         assert msg["user"]["username"] == user_main.username
         assert msg["chat_group"] == chat_group.pk
@@ -353,7 +353,7 @@ class TestChatMessageViewSet:
         event = await communicator_main.receive_json_from()
         assert event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
         msg = event["message"]
-        assert type(msg) == dict
+        assert isinstance(msg, dict)
         assert msg["user"]["id"] == user_main.id
         assert msg["user"]["username"] == user_main.username
         assert msg["chat_group"] == chat_group.pk
@@ -363,7 +363,7 @@ class TestChatMessageViewSet:
         event = await communicator_drek.receive_json_from()
         assert event["event_type"] == str(EventName.GROUP_MESSAGE_UPDATE)
         msg = event["message"]
-        assert type(msg) == dict
+        assert isinstance(msg, dict)
         assert msg["user"]["id"] == user_main.id
         assert msg["user"]["username"] == user_main.username
         assert msg["chat_group"] == chat_group.pk
@@ -435,12 +435,12 @@ class TestChatMessageViewSet:
         event = await communicator_main.receive_json_from()
         assert event["event_type"] == str(EventName.GROUP_MESSAGE_DELETE)
         msg = event["message"]
-        assert type(msg) == dict
+        assert isinstance(msg, dict)
         assert msg["chat_group"] == chat_group.pk
 
         event = await communicator_drek.receive_json_from()
         assert event["event_type"] == str(EventName.GROUP_MESSAGE_DELETE)
         msg = event["message"]
-        assert type(msg) == dict
+        assert isinstance(msg, dict)
         assert msg["id"] == message_id
         assert msg["chat_group"] == chat_group.pk

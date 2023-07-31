@@ -28,7 +28,7 @@ def publish_to_group(chat_group: ChatGroup | Any, data: Any, handler: str) -> No
     """
     unique_id = chat_group
 
-    if type(chat_group) == ChatGroup:
+    if isinstance(chat_group, ChatGroup):
         unique_id = chat_group.pk
 
     channel_layer = get_channel_layer()

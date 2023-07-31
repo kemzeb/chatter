@@ -76,7 +76,7 @@ def test_list_friends_view_is_valid_and_sorted(user_main):
 
     response.render()
     data = json.loads(response.content)
-    assert type(data) == list
+    assert isinstance(data, list)
     assert len(data) == 2
 
     assert data[0]["username"] == "praxis"
@@ -199,7 +199,7 @@ def test_list_friend_request(user_main, user_drek):
 
     response.render()
     data = json.loads(response.content)
-    assert type(data) == list
+    assert isinstance(data, list)
     assert len(data) == 1
     assert "id" in data[0]
     assert data[0]["requester"]["id"] == user_drek.id
