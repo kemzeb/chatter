@@ -12,6 +12,8 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
 import useAxiosProtected from '../utils/useAxiosProtected';
@@ -22,10 +24,13 @@ import AuthContext from '../utils/AuthContext';
 import useChatGroupStore from '../utils/useChatGroupStore';
 
 function Sidebar() {
+  const { logoutUser } = useContext(AuthContext);
   const axios = useAxiosProtected();
   const chatGroups = useChatGroupStore((state) => state.chatGroups);
   const setChatGroups = useChatGroupStore((state) => state.setChatGroups);
   const [openDialog, setOpenDialog] = useState(false);
+  const [settingsAnchorEle, setSettingsAnchorEle] = useState(null);
+  const openSettingsMenu = Boolean(settingsAnchorEle);
   const [prevClickedGroup, setPrevClickedGroup] = useState(-1);
   const navigate = useNavigate();
   const friendsText = 'Friends';
@@ -35,6 +40,8 @@ function Sidebar() {
     setPrevClickedGroup(groupId);
     navigate(`/dashboard/chats/${groupId}`);
   });
+
+  const handleSettingsClick = (e) => setSettingsAnchorEle(e.currentTarget);
 
   useEffect(() => {
     axios.get('/api/chats/').then((response) => {
@@ -107,9 +114,32 @@ function Sidebar() {
           bgcolor: '#2C2F33'
         }}>
         <Typography>username</Typography>
-        <IconButton disableRipple disableFocusRipple>
+        <IconButton
+          disableRipple
+          disableFocusRipple
+          id="settings-button"
+          onClick={handleSettingsClick}
+          aria-controls={openSettingsMenu ? 'settings-menu' : undefined}
+          aria-haspopup="true"
+          aria-expanded={openSettingsMenu ? 'true' : undefined}>
           <SettingsIcon />
         </IconButton>
+        <Menu
+          id="settings-menu"
+          anchorEl={settingsAnchorEle}
+          open={openSettingsMenu}
+          onClose={() => setSettingsAnchorEle(null)}
+          MenuListProps={{
+            'aria-labelledby': 'settings-button'
+          }}>
+          <MenuItem
+            onClick={() => {
+              logoutUser();
+              navigate('/');
+            }}>
+            Logout
+          </MenuItem>
+        </Menu>
       </Box>
     </Box>
   );
