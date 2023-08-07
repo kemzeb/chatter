@@ -1,5 +1,5 @@
-const genericListSlice = (set, get, isNullState) => ({
-  items: isNullState ? null : [],
+const genericListSlice = (set, get) => ({
+  items: [],
   wasInitialized: false, // This flag exists so that WS events don't change the store when setItems() hasn't been called yet.
   setItems: (newItems) => {
     set(() => ({
@@ -8,13 +8,12 @@ const genericListSlice = (set, get, isNullState) => ({
     }));
   },
   addItem: (item) => {
-    if (!get().items || !get().wasInitialized) return;
+    if (!get().wasInitialized) return;
     set((state) => ({
       items: [...state.items, item]
     }));
   },
   removeItem: (id) => {
-    if (!get().items) return;
     set((state) => ({
       items: state.items.filter((item) => item.id !== id)
     }));
