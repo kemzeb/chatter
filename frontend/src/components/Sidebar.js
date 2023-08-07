@@ -26,7 +26,7 @@ import useChatGroupStore from '../utils/useChatGroupStore';
 function Sidebar() {
   const { logoutUser } = useContext(AuthContext);
   const axios = useAxiosProtected();
-  const chatGroups = useChatGroupStore((state) => state.chatGroups);
+  const chatGroups = useChatGroupStore((state) => state.items);
   const setChatGroups = useChatGroupStore((state) => state.setChatGroups);
   const [openDialog, setOpenDialog] = useState(false);
   const [settingsAnchorEle, setSettingsAnchorEle] = useState(null);

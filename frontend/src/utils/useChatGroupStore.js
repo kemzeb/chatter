@@ -1,17 +1,10 @@
 import { create } from 'zustand';
+import genericListSlice from './genericListSlice';
 
 const useChatGroupStore = create((set, get) => ({
-  chatGroups: [],
-  setChatGroups: (chatGroups) => {
-    set(() => ({
-      chatGroups: [...chatGroups]
-    }));
-  },
-  addChatGroup: (chatGroup) => {
-    set((state) => ({
-      chatGroups: [...state.chatGroups, chatGroup]
-    }));
-  }
+  ...genericListSlice(set, get),
+  setChatGroups: (newList) => get().setItems(newList),
+  addChatGroup: (chatGroup) => get().addItem(chatGroup)
 }));
 
 export default useChatGroupStore;
