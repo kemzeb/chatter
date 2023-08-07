@@ -1,24 +1,14 @@
 import { create } from 'zustand';
+import genericListSlice from './genericListSlice';
 
 const usePendingFriendsStore = create((set, get) => ({
-  pendingFriends: null,
-  setPendingFriends: (list) => {
-    set(() => ({
-      pendingFriends: [...list]
-    }));
-  },
+  ...genericListSlice(set, get),
+  setPendingFriends: (newPendingFriends) => get().setItems(newPendingFriends),
   addPendingFriend: ({ id, requester }) => {
-    if (!get().pendingFriends) return;
     const pending = { id: id, requester: requester };
-    set((state) => ({
-      pendingFriends: [...state.pendingFriends, pending]
-    }));
+    get().addItem(pending);
   },
-  removePendingFriend: (id) => {
-    set((state) => ({
-      pendingFriends: state.pendingFriends.filter((pending) => pending.id !== id)
-    }));
-  }
+  removePendingFriend: (id) => get().removeItem(id)
 }));
 
 export default usePendingFriendsStore;

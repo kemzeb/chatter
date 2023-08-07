@@ -5,12 +5,12 @@ import { useEffect } from 'react';
 import usePendingFriendsStore from '../utils/usePendingFriendsStore';
 
 function PendingFriends() {
-  const pendingFriends = usePendingFriendsStore((state) => state.pendingFriends);
+  const pendingFriends = usePendingFriendsStore((state) => state.items);
   const setPendingFriends = usePendingFriendsStore((state) => state.setPendingFriends);
   const axios = useAxiosProtected();
 
   useEffect(() => {
-    if (!pendingFriends) {
+    if (pendingFriends.length == 0) {
       axios.get('/api/users/me/friendrequests/').then((response) => {
         setPendingFriends(response.data);
       });
