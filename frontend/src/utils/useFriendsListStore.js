@@ -1,18 +1,10 @@
 import { create } from 'zustand';
+import genericListSlice from './genericListSlice';
 
 const useFriendsListStore = create((set, get) => ({
-  friendsList: null,
-  setFriendsList: (list) => {
-    set(() => ({
-      friendsList: [...list]
-    }));
-  },
-  addFriend: ({ id, username }) => {
-    if (!get().friendsList) return;
-    set((state) => ({
-      friendsList: [...state.friendsList, { id: id, username: username }]
-    }));
-  }
+  ...genericListSlice(set, get, null),
+  setFriendsList: (newList) => get().setItems(newList),
+  addFriend: ({ id, username }) => get().addItem({ id: id, username: username })
 }));
 
 export default useFriendsListStore;

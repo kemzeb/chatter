@@ -8,12 +8,12 @@ import useFriendsListStore from '../utils/useFriendsListStore';
 import FriendList from './FriendList';
 
 function Friends() {
-  const friendsList = useFriendsListStore((state) => state.friendsList);
+  const friendsList = useFriendsListStore((state) => state.items);
   const setFriendsList = useFriendsListStore((state) => state.setFriendsList);
   const axios = useAxiosProtected();
 
   useEffect(() => {
-    if (!friendsList) {
+    if (friendsList.length === 0) {
       axios.get('/api/users/me/friends/').then((response) => {
         setFriendsList(response.data);
       });
