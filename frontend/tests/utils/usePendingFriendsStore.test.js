@@ -3,7 +3,7 @@ import { expect } from '@jest/globals';
 import usePendingFriendsStore from '../../src/utils/usePendingFriendsStore';
 
 describe('usePendingFriendsStore', () => {
-  afterEach(() => act(() => usePendingFriendsStore.setState({ items: [] })));
+  afterEach(() => act(() => usePendingFriendsStore.getState().reset()));
 
   it('should initialize items to []', () => {
     const { result } = renderHook(() => usePendingFriendsStore());

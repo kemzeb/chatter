@@ -17,7 +17,8 @@ const genericListSlice = (set, get) => ({
     set((state) => ({
       items: state.items.filter((item) => item.id !== id)
     }));
-  }
+  },
+  reset: () => set({ items: [] })
 });
 
 export default genericListSlice;
