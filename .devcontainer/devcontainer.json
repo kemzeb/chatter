@@ -20,7 +20,7 @@
     5432 // For communication with the PostgreSQL database.
   ],
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "bash scripts/install-dev-tools.sh",
+  "postCreateCommand": "bash scripts/setup.sh",
   // Configure tool-specific properties.
   "customizations": {
     // Configure properties specific to VS Code.

@@ -22,19 +22,7 @@ A hobby real-time chatting web application.
 ## Usage
 
 Setup the development environment by hopping on VSCode and taking advantage of the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
-When you made it into the development container, do the following:
 
-1. Add a `.env` file and include the following: `SECRET_KEY=dev` (we don't care what the value is since we are in a development environment)
-2. Apply Django-related migrations to setup the database: `python manage.py migrate`.
-3. Bundle JavaScript files by doing the following:
-
-```console
-# Assuming your at the project root directory
-cd frontend/
-npm run build
-cd ..
-```
-
-3. Start the Daphne server: `python manage.py runserver`.
+After setting up the Dev Container, start the Daphne server: `python manage.py runserver`. The frontend is served at `http://127.0.0.1:8000/`.
 
 And you should be good to go!
